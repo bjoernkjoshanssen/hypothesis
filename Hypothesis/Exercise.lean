@@ -12,6 +12,8 @@ import Mathlib.Analysis.SpecialFunctions.Log.ERealExp
 import Mathlib.Analysis.SpecialFunctions.ImproperIntegrals
 import Mathlib.MeasureTheory.Measure.Decomposition.RadonNikodym
 
+import Mathlib.Analysis.InnerProductSpace.Projection
+
 /-!
 
 # Exercises from Grinstead and Snell
@@ -249,68 +251,38 @@ lemma exercise_1_2_6 (μ : Measure (Fin 6)) [i : IsProbabilityMeasure μ]
      ∧ μ {5} = 5 * μ {1}
      ∧ μ {6} = 6 * μ {1}) : μ {2,4,6} = 12 / 21 := by
   have h₀ : μ {2,4,6} = 12 * μ {1} := by
-    have : {2,4,6} = (({2} ∪ {4,6}) : Set (Fin 6)) := by exact rfl
-    have : μ {2,4,6} = μ {2} + μ {4,6} := this ▸ measure_union (by simp) trivial
-    rw [this, h.1]
-    have : {4,6} = (({4} ∪ {6}) : Set (Fin 6)) := by exact rfl
-    have : μ {4,6} = μ {4} + μ {6} := by
-      rw [this]
-      refine measure_union ?_ trivial
-      simp
-    rw [this]
-    rw [h.2.2.1]
-    rw [h.2.2.2.2]
+    rw [show {2,4,6} = ({2} ∪ ({4} ∪ {6}) : Set (Fin 6)) by rfl]
+    repeat rw [measure_union (by simp) (by simp)]
+    rw [h.1, h.2.2.1, h.2.2.2.2]
     ring_nf
-  have h₂ : μ Set.univ = (1 : ENNReal) := by simp
+  have h₂ : μ Set.univ = 1 := by simp
   have h₃ : (Set.univ : Set (Fin 6)) = {1,2,3,4,5,6} := by
-    ext j
-    simp
-    fin_cases j <;> tauto
-  have h₆ : (1:ENNReal) + 2 + 3 + 4 + 5 + 6 = 21 := by
-    have h₅ : (1:Real) + 2 + 3 + 4 + 5 + 6 = 21 := by
-      linarith
-    refine (toReal_eq_toReal_iff' ?_ ?_).mp ?_
-    simp
-    simp
-    exact h₅
+    ext j; fin_cases j <;> tauto
+  have h₅ : (1:Real) + 2 + 3 + 4 + 5 + 6 = 21 := by linarith
+  have h₆ : (1:ENNReal) + 2 + 3 + 4 + 5 + 6 = 21 := (toReal_eq_toReal_iff' (by simp) (by simp)).mp h₅
   have h₄ : μ {1} + μ {2} + μ {3} + μ {4} + μ {5} + μ {6} = μ {1,2,3,4,5,6} := by
     have h₇ : ({1,2,3,4,5,6} : Set (Fin 6)) = {1} ∪ {2} ∪ {3} ∪ {4} ∪ {5} ∪ {6}:= by
-      ext j
-      fin_cases j <;> simp
+      ext j; fin_cases j <;> simp
     rw [h₇]
-    repeat rw [measure_union]
-    all_goals simp
-  have h₁ : μ {1} + μ {2} + μ {3} + μ {4} + μ {5} + μ {6} = 1 := by
-    rw [h₄,← h₃,h₂]
+    repeat rw [measure_union (by simp) (by simp)]
   have h₂ : μ {1} = 1/21 := by
-    suffices 21 * μ {1} = 1 by
-      refine (ENNReal.eq_div_iff ?_ ?_).mpr this
-      simp;simp
-    rw [← h₂,h₃,← h₄]
-    rw [h.1,h.2.1,h.2.2.1,h.2.2.2.1,h.2.2.2.2]
+    rw [ENNReal.eq_div_iff (by simp) (by simp)]
+    rw [← h₂, h₃, ← h₄, h.1, h.2.1, h.2.2.1, h.2.2.2.1, h.2.2.2.2]
     ring_nf
-  rw [h₀, h₂]
-  rw [mul_div]
+  rw [h₀, h₂, mul_div]
   simp
 
-def pmf {A : Type*} [Fintype A] := @Subtype (A → ℝ) fun f ↦ Finset.sum Finset.univ f = 1
+def pmf (A : Type*) [Fintype A] := {f : A → ℝ // Finset.sum Finset.univ f = (1:ℝ)}
 
-noncomputable def X : @pmf (Fin 4) _ := by
-  unfold pmf
-  exact ⟨
-    ![5⁻¹, 2*5⁻¹, 5⁻¹, 5⁻¹], by
+noncomputable def X : pmf (Fin 4) := ⟨![5⁻¹, 2*5⁻¹, 5⁻¹, 5⁻¹], by
   simp [Finset.sum]
   ring_nf⟩
 
 noncomputable def P : PMF (Fin 4) := by
-  unfold PMF
-  apply PMF.ofFintype
-  show  Finset.sum Finset.univ ![5⁻¹, 2*5⁻¹, 5⁻¹, 5⁻¹] = 1
+  apply PMF.ofFintype (f := ![5⁻¹, 2*5⁻¹, 5⁻¹, 5⁻¹])
   simp [Finset.sum]
   ring_nf
-  refine ENNReal.inv_mul_cancel ?_ ?_
-  simp
-  simp
+  exact ENNReal.inv_mul_cancel (by simp) (by simp)
 
 example : P 0 = 5⁻¹ := by rfl
 example : P.toMeasure {0,1} = 3*5⁻¹ := by
@@ -337,13 +309,7 @@ lemma exercise_1_2_14a : mY 2 = 1/5 := by
   simp [mY]
   have (a : Fin 7) : 2 = a + 3 ↔ a = -1 := by
     fin_cases a
-    simp
-    simp; exact not_eq_of_beq_eq_false rfl
-    simp; exact not_eq_of_beq_eq_false rfl
-    simp; exact not_eq_of_beq_eq_false rfl
-    simp; exact not_eq_of_beq_eq_false rfl
-    simp; exact not_eq_of_beq_eq_false rfl
-    simp; exact rfl
+    all_goals (simp; try rfl) <;> exact not_eq_of_beq_eq_false rfl
   simp_rw [this]
   have : (∑' (a : Fin 7), if a = -1 then mX a else 0)
     = mX (-1) := by simp_all only [Fin.isValue, tsum_ite_eq]
@@ -355,14 +321,10 @@ noncomputable def mZ : PMF (Fin 7) :=
 
 lemma a_case_of_exercise_1_2_14_c : mZ 2 = 0 := by
   simp [mZ]
-  have (a : Fin 7) : 2 = a * a ↔ a = 3 ∨ a = 4:= by
-    fin_cases a <;> simp
+  have (a : Fin 7) : 2 = a * a ↔ a = 3 ∨ a = 4:= by fin_cases a <;> simp
   simp_rw [this, mX]
   intro i hi
-  cases hi with
-  | inl h => subst h;simp
-  | inr h => subst h;simp
-
+  rcases hi with (h | h) <;> (subst h;simp)
 
 noncomputable def ex_2_1' : Measure (Set.Icc 2 10 : Set ℝ) :=
    (8⁻¹ : ENNReal) • volume (α := (Set.Icc 2 10 : Set ℝ)) (self := Measure.Subtype.measureSpace)
@@ -406,17 +368,17 @@ lemma u₀ (A : Set ℝ) (hA : MeasurableSet A) :
         A hA
     have h₁ := @MeasureTheory.Measure.setLIntegral_rnDeriv' Real Real.measurableSpace
         uniformOn_2_10 volume (by
-            unfold uniformOn_2_10;simp
+            simp [uniformOn_2_10]
             exact haveLebesgueDecompositionSMul' (volume.restrict (Set.Icc 2 10)) volume 8⁻¹
             ) (by
-            unfold uniformOn_2_10;simp
-            refine AbsolutelyContinuous.smul_left absolutelyContinuous_restrict 8⁻¹)
+            simp [uniformOn_2_10]
+            exact AbsolutelyContinuous.smul_left absolutelyContinuous_restrict 8⁻¹)
         A hA
     have h₂ : ∫⁻ (x : ℝ) in A, uniformOn_2_10.rnDeriv volume x ∂volume
          = ∫⁻ (x : ℝ) in A, (fun x ↦ if x ∈ Set.Icc 2 10 then 8⁻¹ else 0) x ∂volume := by
         have := rnDeriv_uniformOn_2_10
         refine setLIntegral_congr_fun_ae hA ?_
-        simp [Filter.Eventually]
+        rw [Filter.Eventually]
         exact Filter.mem_of_superset this fun ⦃a⦄ a_1 a ↦ a_1
     exact h₁ ▸ h₂
 
@@ -503,15 +465,10 @@ example (a b : ℝ) (h₀ : a ≤ b) (h : Set.Icc a b ⊆ Set.Icc 2 10) :
     simp at this
     exact this
   rw [this]
-  refine (toReal_eq_toReal_iff' ?_ ?_).mp ?_
-  simp
-  simp
-  simp
-  exact h₀
+  exact (toReal_eq_toReal_iff' (by simp) (by simp)).mp (by simp;exact h₀)
 
 lemma ispdf : IsPDF' uniformOn_2_10
     (fun x : ℝ => (8⁻¹:ENNReal) • Set.indicator (Set.Icc (2:ℝ) 10) 1 x) := by
-  unfold IsPDF'
   intro A hA
   rw [u₀]
   congr
@@ -599,3 +556,258 @@ def printPowerSetProbs : IO Unit :=
 #eval printPowerSetProbs
 
 end exercise_1_2_1
+
+noncomputable def Q : PMF (Fin 4) := by
+  unfold PMF
+  apply PMF.ofFintype
+  show  Finset.sum Finset.univ ![0, 0, 1, 0] = 1
+  simp [Finset.sum]
+
+example : Unit := by
+  let R : PMF (Fin 4) := by
+    unfold PMF
+    apply PMF.ofFintype
+    show Finset.sum Finset.univ ![1/2, 0, 0, 1/2] = 1
+    simp [Finset.sum]
+
+    exact inv_two_add_inv_two
+  sorry
+
+noncomputable def f : Fin 4 → ℝ := ![1/3, 1/3, 0, 1/3]
+noncomputable def W : Finset (Fin 4) → ℝ := fun S =>
+    ∑ i ∈ S, f i
+
+def expect {n : ℕ} (g : Fin n → ℝ) := ∑ i ∈ Finset.univ, i * g i
+
+
+def students_own_expectation (g : Fin 4 → ℝ) :=
+  0 * g 0 + 1 * g 1 + 2 * g 2 + 3 * g 3
+
+example : students_own_expectation f = 4/3 := by
+  simp [students_own_expectation, f]
+  norm_num
+
+def myfavoritenumber : ℕ := by
+  sorry
+
+
+
+
+noncomputable def K {n : ℕ} (x : Fin n → ℝ) := @Submodule.span ℝ (EuclideanSpace ℝ (Fin n)) _ _ _
+    {x, fun _ => 1}
+
+theorem hxK {n : ℕ} (x : Fin n → ℝ) : x ∈ K x := Submodule.mem_span_of_mem (Set.mem_insert x {fun _ ↦ 1})
+
+theorem h1K {n : ℕ} (x : Fin n → ℝ) : (fun _ ↦ 1) ∈ K x := Submodule.mem_span_of_mem (Set.mem_insert_of_mem x rfl)
+
+theorem topsub {n : ℕ} (x : Fin n → ℝ) :
+    ⊤ ≤ Submodule.span ℝ (Set.range ![(⟨x, hxK x⟩ : K x), (⟨fun _ => 1, h1K x⟩ : K x)]) := by
+  simp [K]
+  apply Submodule.eq_top_iff'.mpr
+  simp
+  intro a ha
+  apply Submodule.mem_span_pair.mpr
+  obtain ⟨c,d,hcd⟩ := Submodule.mem_span_pair.mp ha
+  use d, c
+  simp
+  rw [← hcd]
+  rw [add_comm]
+
+def Kvec {n : ℕ} (x : Fin n → ℝ) := ![(⟨x, hxK x⟩ : K x), (⟨fun _ => 1, h1K x⟩ : K x)]
+
+/-- Given points `(x i, y i)`, obtain the coordinates `[c, d]` such that
+`y = c x + d` is the best fit regression line. -/
+noncomputable def regression_coordinates {n : ℕ} (x y : Fin n → ℝ)
+    (lin_indep : LinearIndependent ℝ (Kvec x)) :
+    Fin 2 → ℝ := fun i => ((Module.Basis.mk lin_indep (topsub _)).repr <| (K x).orthogonalProjection y) i
+
+noncomputable def regression_coordinates' {n : ℕ} (x y : Fin n → ℝ)
+    (lin_indep : LinearIndependent ℝ (Kvec x)) :
+    Fin 2 → ℝ := by
+  let zz := @Submodule.starProjection ℝ (EuclideanSpace ℝ (Fin n)) _ _ _ (K x)
+    (Submodule.HasOrthogonalProjection.ofCompleteSpace _) y
+  let z := (⟨zz,
+    by exact Submodule.starProjection_apply_mem (K x) y⟩ : {z : EuclideanSpace ℝ (Fin n) // z ∈ K x})
+  let rc := ((Module.Basis.mk lin_indep (topsub _)).repr <| z)
+  exact fun i => rc i
+
+
+lemma my :
+ LinearIndependent ℝ (Kvec ![0, 1, 2]) := by
+    simp [Kvec]
+    refine LinearIndependent.pair_iff.mpr ?_
+    intro s t h
+    simp at h
+    have : ![s * 0, s * 1, s * 2] + ![t * 1, t * 1, t * 1] = 0 := by
+      rw [← h]
+      congr <;> (ext i; fin_cases i <;> simp)
+    simp at this
+    have := this.1
+    subst this
+    simp at this
+    tauto
+
+
+
+theorem hvo (w : EuclideanSpace ℝ (Fin 3))
+    (hw : w ∈ K ![0, 1, 2]) : inner ℝ (![0, 1, 1] - ![1 / 6, 4 / 6, 7 / 6]) w = 0 := by
+  obtain ⟨a,b,h⟩ := Submodule.mem_span_pair.mp hw
+  rw [← h]
+  simp [inner]
+  rw [Fin.sum_univ_three]
+  repeat rw [Pi.sub_apply]
+  simp
+  grind
+
+
+
+example : regression_coordinates' ![0,1,2] ![0,1,1] my = ![1/2,1/6] := by
+  simp [regression_coordinates']
+  have hvm : ![1 / 6, 4 / 6, 7 / 6] ∈ K ![0, 1, 2] := by
+    refine Submodule.mem_span_pair.mpr ?_
+    use 1/2, 1/6
+    ext i
+    fin_cases i <;> (simp; try grind)
+  rw [LinearIndependent.repr_eq my (l := {
+    toFun := ![2⁻¹, 6⁻¹]
+    support := Finset.univ
+    mem_support_toFun := by intro i;fin_cases i <;> simp
+  })]
+  · simp
+  · apply Subtype.coe_eq_of_eq_mk
+    rw [Submodule.eq_starProjection_of_mem_of_inner_eq_zero hvm hvo]
+    simp [Kvec]
+    ext j
+    fin_cases j <;> (simp [Finsupp.linearCombination, Finsupp.sum]; try grind)
+
+
+
+-- example
+--   (lin_indep : LinearIndependent ℝ (Kvec ![0,1,2]))
+--   : regression_coordinates ![0,1,2] ![0,1,2] my = ![1,0] := by
+--   unfold regression_coordinates
+--   simp
+--   -- Submodule.eq_starProjection_of_mem_of_inner_eq_zero
+--   sorry
+-- Should generalize this to more input variables
+-- prove the answer for (0,0), (1,1), (2,1)?
+example
+  (lin_indep : LinearIndependent ℝ (Kvec ![0,1,2]))
+  : regression_coordinates ![0,1,2] ![0,1,1] my = ![1/2,1/6] := by
+  unfold regression_coordinates
+--   simp
+  let z := @Submodule.starProjection ℝ (EuclideanSpace ℝ (Fin 3)) _ _ _ (K ![0,1,2])
+    (Submodule.HasOrthogonalProjection.ofCompleteSpace _) ![0,1,1]
+  have h₀ := @Submodule.coe_orthogonalProjection_apply ℝ (EuclideanSpace ℝ (Fin 3)) _ _ _ (K ![0,1,2])
+    _ ![0,1,1]
+  show (fun i => ((Module.Basis.mk my (topsub _)).repr <| (K ![0,1,2]).orthogonalProjection ![0,1,1]) i) = ![1/2,1/6]
+  suffices
+    (fun i => ((Module.Basis.mk my (topsub _)).repr <| ⟨(K ![0,1,2]).starProjection ![0,1,1], by
+        simp⟩) i) = ![1/2,1/6] by
+    rw [← this]
+    simp_rw [← h₀]
+  have := @Submodule.eq_starProjection_of_mem_of_inner_eq_zero ℝ (EuclideanSpace ℝ (Fin 3)) _ _ _ (K ![0,1,2])
+    _ ![0,1,1] ![1/6,4/6,7/6] (by
+        unfold K
+        refine Submodule.mem_span_pair.mpr ?_
+        use 1/2
+        use 1/6
+        ext i
+        fin_cases i
+        · simp
+        · simp
+          grind
+        · simp
+          grind) (by
+        unfold K
+        intro w hw
+        simp [inner]
+        obtain ⟨a,b,h⟩ := Submodule.mem_span_pair.mp hw
+        rw [← h]
+        simp
+        have :  ∑ x : Fin 3, (a * ![0, 1, 2] x + b) * (![0, 1, 1] x - ![6⁻¹, 4 / 6, 7 / 6] x) =
+             (a * ![0, 1, 2] 0 + b) * (![0, 1, 1] 0 - ![6⁻¹, 4 / 6, 7 / 6] 0)
+             +
+             (a * ![0, 1, 2] 1 + b) * (![0, 1, 1] 1 - ![6⁻¹, 4 / 6, 7 / 6] 1)
+             +
+             (a * ![0, 1, 2] 2 + b) * (![0, 1, 1] 2 - ![6⁻¹, 4 / 6, 7 / 6] 2)
+             := by exact
+               Fin.sum_univ_three fun i ↦
+                 (a * ![0, 1, 2] i + b) * (![0, 1, 1] i - ![6⁻¹, 4 / 6, 7 / 6] i)
+        rw [this]
+        simp
+        grind)  -- replace 4,4,4 by projection of 0,1,1 onto 0,1,2 and 1,1,1
+  simp_rw [this]
+
+
+
+
+  have := @Module.Basis.mk_apply (Fin 2) ℝ (K ![0,1,2]) _ _ _
+    (Kvec _) my (topsub _)
+  rw [← funext_iff] at this
+  let Kbasis : Module.Basis (Fin 2) ℝ ↥(K ![0, 1, 2]) := {
+    repr := by
+      unfold K
+      exact {
+                toFun := (Module.Basis.mk lin_indep (topsub _)).repr
+                map_add' :=
+                  LinearEquiv.map_add (Module.Basis.mk lin_indep (topsub ![0, 1, 2])).repr
+                map_smul' := sorry
+                invFun := sorry
+                left_inv := sorry
+                right_inv := sorry
+      }
+  }
+
+  rw [Module.Basis.mk_repr]
+  unfold my at this ⊢
+  simp
+  have := @Module.Basis.repr_eq_iff' (Fin 2) ℝ (K ![0,1,2]) _ _ _
+
+  have := @Module.Basis.repr_eq_iff (Fin 2) ℝ (K ![0,1,2]) _ _ _
+    (by
+        exact @Module.Basis.mk (v := Kvec ![0, 1, 2]) (R := ℝ) _ _ _ _
+            _ my (topsub _)) {
+                toFun := by sorry
+                map_add' := sorry
+                map_smul' := sorry
+            }
+  sorry
+
+
+theorem hilbert_projection_theorem : True := by
+  obtain ⟨v,hv⟩ := Submodule.exists_norm_eq_iInf_of_complete_subspace
+    (𝕜 := ℝ) (E := ℝ) ⊤ (Submodule.complete_of_finiteDimensional _) 1
+  have : v = 1 := by
+    simp at hv
+    suffices |1 - v| = 0 by
+      simp at this
+      linarith
+    apply Eq.trans hv
+    apply le_antisymm
+    · refine Real.iInf_nonpos' ?_
+      use ⟨1,by simp⟩
+      simp
+    · refine Real.iInf_nonneg ?_
+      intro x
+      simp
+  sorry
+
+def myprop : Prop := by
+  exact expect f = 4/3
+
+example : expect f = 4/3 := by
+  unfold expect f
+  show @Eq ℝ (∑ i ∈ {0} ∪ {1, 2, 3}, i * ![1 / 3, 1 / 3, 0, 1 / 3] i) _
+  rw [Finset.sum_union (by simp)]
+  simp
+  norm_num
+
+
+#check W {0,3}
+-- #eval W {0,3}
+
+example : W {0,3} = 2/3 := by
+  simp [W]
+  simp [f]
+  ring_nf
