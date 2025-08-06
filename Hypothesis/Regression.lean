@@ -95,6 +95,18 @@ lemma hvo₀₁₁ (w : EuclideanSpace ℝ (Fin 3))
   simp
   grind
 
+/--
+The best fitting line for (0,0), (1,1), (1,2) is y=x/2+1/6:
+  · · · · · · · · · · · · *
+1 · · · · · · X · · · * · X
+  · · · · · · · · * · · · ·
+  · · · · · · * · · · · · ·
+  · · · · * · · · · · · · ·
+  · · * · · · · · · · · · ·
+  * · · · · · · · · · · · ·
+0 X · · · · · · · · · · · ·
+  0 . . . . . 1 . . . . . 2
+-/
 example : regression_coordinates₁ ![0,1,2] ![0,1,1] indep₀₁₂ = ![1/2,1/6] := by
   unfold regression_coordinates₁
   simp
