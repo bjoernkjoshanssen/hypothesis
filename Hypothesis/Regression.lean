@@ -3,6 +3,8 @@ import Mathlib.Analysis.InnerProductSpace.PiL2
 /-!
 # Linear regression
 -/
+example : 0 ≤ 1505 := Nat.zero_le _
+example : 1505 ≤ 1505 := Nat.le_refl _
 
 noncomputable def K₁ {n : ℕ} (x : Fin n → ℝ) := @Submodule.span ℝ (EuclideanSpace ℝ (Fin n)) _ _ _
     {x, fun _ => 1}
@@ -107,7 +109,8 @@ The best fitting line for (0,0), (1,1), (1,2) is y=x/2+1/6:
 0 X · · · · · · · · · · · ·
   0 . . . . . 1 . . . . . 2
 -/
-example : regression_coordinates₁ ![0,1,2] ![0,1,1] indep₀₁₂ = ![1/2,1/6] := by
+example : regression_coordinates₁ ![0,1,2] ![0,1,1] indep₀₁₂
+  = ![1/2,1/6] := by
   unfold regression_coordinates₁
   simp
   have hvm : ![1 / 6, 4 / 6, 7 / 6] ∈ K₁ ![0, 1, 2] := by
@@ -126,3 +129,238 @@ example : regression_coordinates₁ ![0,1,2] ![0,1,1] indep₀₁₂ = ![1/2,1/6
     simp [Kvec₁]
     ext j
     fin_cases j <;> (simp [Finsupp.linearCombination, Finsupp.sum]; try grind)
+
+
+def A (x : Fin 3 → ℝ) : Matrix (Fin 3) (Fin 2) ℝ := !![
+  x 0,1;
+  x 1,1;
+  x 2,1
+]
+local notation "foo" x => x + 1
+local notation x "ᵀ" => Matrix.transpose x
+
+noncomputable def getCoeffs (x y : Fin 3 → ℝ) :=
+  Matrix.mulᵣ (Matrix.mulᵣ (Matrix.mulᵣ ((A x)ᵀ) (A x))⁻¹ ((A x)ᵀ))
+  !![y 0; y 1; y 2]
+
+theorem aug8_25 (x y : Fin 3 → ℝ) :
+  (fun i ↦ (A x).mulᵣ (((A xᵀ.mulᵣ (A x))⁻¹.mulᵣ (A xᵀ)).mulᵣ !![y 0; y 1; y 2]) i 0) ∈ K₁ x := by
+  simp [K₁]
+  unfold A
+  apply Submodule.mem_span_pair.mpr
+  let α := ((!![x 0, 1; x 1, 1; x 2, 1]ᵀ * !![x 0, 1; x 1, 1; x 2, 1])⁻¹ * !![x 0, 1; x 1, 1; x 2, 1]ᵀ *
+          !![y 0; y 1; y 2])
+  use α 0 0, α 1 0
+  unfold α
+  generalize !![y 0; y 1; y 2] = b
+  have h₀ : !![x 0, 1; x 1, 1; x 2, 1]ᵀ
+    = !![x 0, x 1, x 2; 1, 1, 1] := by
+    ext i j; fin_cases i <;> fin_cases j <;> simp
+  have : !![x 0, 1; x 1, 1; x 2, 1]ᵀ * !![x 0, 1; x 1, 1; x 2, 1]
+    = !![x 0^2+x 1^2+x 2^2, x 0 + x 1 + x 2; x 0 + x 1 + x 2, 3] := by
+    repeat rw [h₀]
+    ext i j
+    fin_cases i <;>
+    · fin_cases j <;>
+      · simp
+        ring_nf
+  repeat rw [this]
+  have : !![x 0 ^ 2 + x 1 ^ 2 + x 2 ^ 2, x 0 + x 1 + x 2; x 0 + x 1 + x 2, 3]⁻¹
+    = (2 * (x 0^2 + x 1^2 + x 2^2 - x 0 * x 1 - x 0 * x 2 - x 1 * x 2))⁻¹
+    • !![3, - (x 0 + x 1 + x 2); - (x 0 + x 1 + x 2),x 0 ^ 2 + x 1 ^ 2 + x 2 ^ 2] := by
+    rw [Matrix.inv_def]
+    rw [Matrix.det_fin_two]
+    rw [Matrix.adjugate_fin_two]
+    simp
+    constructor
+    constructor
+    · ring_nf
+      field_simp
+      ring_nf
+    · left
+      rw [← mul_inv]
+      congr
+      ring_nf
+    · constructor <;>
+      · left
+        rw [← mul_inv]
+        congr
+        ring_nf
+
+  repeat rw [this]
+  repeat rw [h₀]
+  have : (!![x 0, 1; x 1, 1; x 2, 1] *
+        ((2 * (x 0 ^ 2 + x 1 ^ 2 + x 2 ^ 2 - x 0 * x 1 - x 0 * x 2 - x 1 * x 2))⁻¹ •
+              !![3, -(x 0 + x 1 + x 2); -(x 0 + x 1 + x 2), x 0 ^ 2 + x 1 ^ 2 + x 2 ^ 2] *
+            !![x 0, x 1, x 2; 1, 1, 1] *
+          b)) =
+         (2 * (x 0 ^ 2 + x 1 ^ 2 + x 2 ^ 2 - x 0 * x 1 - x 0 * x 2 - x 1 * x 2))⁻¹ •
+    (!![x 0, 1; x 1, 1; x 2, 1] * (
+              !![3, -(x 0 + x 1 + x 2); -(x 0 + x 1 + x 2), x 0 ^ 2 + x 1 ^ 2 + x 2 ^ 2] *
+            !![x 0, x 1, x 2; 1, 1, 1] *
+          b)) := by
+        generalize !![3, -(x 0 + x 1 + x 2); -(x 0 + x 1 + x 2), x 0 ^ 2 + x 1 ^ 2 + x 2 ^ 2] = v
+        simp
+  repeat rw [this]
+  generalize (2 * (x 0 ^ 2 + x 1 ^ 2 + x 2 ^ 2 - x 0 * x 1 - x 0 * x 2 - x 1 * x 2))⁻¹ = c
+  generalize !![3, -(x 0 + x 1 + x 2); -(x 0 + x 1 + x 2), x 0 ^ 2 + x 1 ^ 2 + x 2 ^ 2] = d
+  have : c • d * !![x 0, x 1, x 2; 1, 1, 1] * b
+    = c • (d * !![x 0, x 1, x 2; 1, 1, 1] * b) := by simp
+  rw [this]
+
+  generalize d * !![x 0, x 1, x 2; 1, 1, 1] * b = e
+  have : x = ![x 0, x 1, x 2] := by ext i;fin_cases i <;> simp
+  nth_rewrite 1 [this]
+  generalize x 0 = x₀
+  generalize x 1 = x₁
+  generalize x 2 = x₂
+  by_cases H : c = 0
+  · rw [H]
+    simp
+    ext i
+    simp
+  ext i
+  fin_cases i
+  simp
+  have :  c * e 0 0 * x₀ + c * e 1 0
+    =  c * (e 0 0 * x₀ + e 1 0) := by ring_nf
+  rw [this]
+  refine (IsUnit.mul_right_inj ?_).mpr ?_
+  exact Ne.isUnit H
+  simp [Matrix.vecMul]
+  rw [mul_comm]
+  congr
+  simp
+  have :  c * e 0 0 * x₁ + c * e 1 0
+    =  c * (e 0 0 * x₁ + e 1 0) := by ring_nf
+  rw [this]
+  refine (IsUnit.mul_right_inj ?_).mpr ?_
+  exact Ne.isUnit H
+  simp [Matrix.vecMul]
+  rw [mul_comm]
+  congr
+  simp
+  have :  c * e 0 0 * x₂ + c * e 1 0
+    =  c * (e 0 0 * x₂ + e 1 0) := by ring_nf
+  rw [this]
+  refine (IsUnit.mul_right_inj ?_).mpr ?_
+  exact Ne.isUnit H
+  simp [Matrix.vecMul]
+  rw [mul_comm]
+  congr
+
+theorem star_projection_is_matrix_product (x y : Fin 3 → ℝ)
+    (hB : IsUnit (!![x 0, 1; x 1, 1; x 2, 1]ᵀ * !![x 0, 1; x 1, 1; x 2, 1]).det) :
+    -- this just says ¬ (x 0 = x 1 ∧ x 0 = x 2)
+  (fun i => Matrix.mulᵣ (A x) (
+  Matrix.mulᵣ (Matrix.mulᵣ (Matrix.mulᵣ ((A x)ᵀ) (A x))⁻¹ ((A x)ᵀ))
+  !![y 0; y 1; y 2]) i 0) = Submodule.starProjection (K₁ x) y := by
+  symm
+  rw [Submodule.eq_starProjection_of_mem_of_inner_eq_zero]
+  · apply aug8_25
+
+  intro z hz
+  simp [K₁] at hz
+  obtain ⟨a,b,h⟩ := Submodule.mem_span_pair.mp hz
+  rw [← h]
+  unfold A
+  have :  ((a • x + b • fun (x : Fin 3) ↦ (1:ℝ))) =
+    fun i => Matrix.mulᵣ !![x 0, 1; x 1, 1; x 2, 1] ![![a], ![b]] i 0 := by
+    ext i;fin_cases i <;> (simp [Matrix.vecMul];linarith)
+  rw [this]
+  revert hB
+  generalize !![x 0, 1; x 1, 1; x 2, 1] = B
+  intro hB
+  rw [inner_sub_left]
+  have (y z : EuclideanSpace ℝ (Fin 3)) : inner ℝ y z =
+    Matrix.mulᵣ !![z 0, z 1, z 2] !![y 0; y 1; y 2] 0 0 := by
+        simp [inner]
+        rw [← add_assoc]
+        exact Fin.sum_univ_three fun i ↦ z i * y i
+  repeat rw [this]
+  generalize ![![a],![b]] = m
+  generalize y 0 = y₀
+  generalize y 1 = y₁
+  generalize y 2 = y₂
+  let α := !![B.mulᵣ m 0 0, B.mulᵣ m 1 0, B.mulᵣ m 2 0]
+  let β := (B.mulᵣ m)ᵀ
+  have : α = β := by
+    unfold α β
+    ext i j; fin_cases i ; fin_cases j <;> simp
+  unfold α β at this
+  rw [this]
+  generalize !![y₀; y₁; y₂] = P
+  let γ := !![B.mulᵣ (((Bᵀ.mulᵣ B)⁻¹.mulᵣ (Bᵀ)).mulᵣ P) 0 0;
+        B.mulᵣ (((Bᵀ.mulᵣ B)⁻¹.mulᵣ (Bᵀ)).mulᵣ P) 1 0;
+        B.mulᵣ (((Bᵀ.mulᵣ B)⁻¹.mulᵣ (Bᵀ)).mulᵣ P) 2 0]
+  let δ := B.mulᵣ (((Bᵀ.mulᵣ B)⁻¹.mulᵣ (Bᵀ)).mulᵣ P)
+  have : γ = δ := by
+    ext i j
+    fin_cases i <;> fin_cases j <;> simp [γ, δ]; try simp
+  unfold γ δ at this
+  rw [this]
+  simp
+  suffices (mᵀ * Bᵀ * P) 0 0 = (mᵀ * Bᵀ * (B * ((Bᵀ * B)⁻¹ * Bᵀ * P))) 0 0 by
+    exact sub_eq_zero_of_eq this
+  suffices  (mᵀ * Bᵀ * P) = (mᵀ * Bᵀ * (B * ((Bᵀ * B)⁻¹ * Bᵀ * P))) by
+    rw [this]
+  have h₁ : (Bᵀ * B) * ((Bᵀ * B)⁻¹) = 1 := by
+    refine Matrix.mul_nonsing_inv (Bᵀ * B) hB
+  have h₀ :  mᵀ * Bᵀ * (B * ((Bᵀ * B)⁻¹ * Bᵀ * P))
+    =  mᵀ * (Bᵀ * (B * ((Bᵀ * B)⁻¹ * Bᵀ * P))) := by
+        simp [Matrix.mul_assoc]
+  rw [h₀]
+  have : mᵀ * Bᵀ * P = mᵀ * (Bᵀ * P) := by
+    simp [Matrix.mul_assoc]
+  rw [this]
+  suffices  (Bᵀ * P) = (Bᵀ * (B * ((Bᵀ * B)⁻¹ * Bᵀ * P))) by
+    rw [this]
+  have : Bᵀ * (B * ((Bᵀ * B)⁻¹ * Bᵀ * P)) =
+    (Bᵀ * (B * ((Bᵀ * B)⁻¹ * Bᵀ))) * P := by
+    simp [Matrix.mul_assoc]
+  rw [this]
+  suffices Bᵀ = Bᵀ * (B * ((Bᵀ * B)⁻¹ * Bᵀ)) by
+    nth_rw 1 [this]
+  repeat rw [← Matrix.mul_assoc]
+  rw [h₁]
+  simp
+
+
+example (x y i)
+  (hl : LinearIndependent ℝ (Kvec₁ x))
+  :  getCoeffs x y i 0
+  = regression_coordinates₁ x y hl i := by
+  unfold getCoeffs regression_coordinates₁
+  have := @star_projection_is_matrix_product x y sorry
+  simp_rw [← this]
+  unfold K₁ A
+  simp
+  rw [LinearIndependent.repr_eq]
+  sorry
+  sorry
+  sorry
+
+
+example : getCoeffs ![0,1,2] ![0,1,1] = !![1/2;1/6] := by
+  unfold getCoeffs A
+  have (a : ℝ) : ![(0:ℝ),1,a] 2 = a := rfl
+  repeat rw [this]
+  have (a : ℝ) : ![(0:ℝ),1,a] 1 = 1 := rfl
+  repeat rw [this]
+  have (a : ℝ) : ![(0:ℝ),1,a] 0 = 0 := rfl
+  repeat rw [this]
+  have : !![(0:ℝ), 1; 1, 1; 2, 1]ᵀ
+       = !![0, 1, 2; 1, 1, 1] := by
+      ext i j; fin_cases i <;> fin_cases j <;> simp
+  rw [this]
+  rw [Matrix.inv_def]
+  simp
+  grind
+example (a b c : ℝ) : getCoeffs ![a,b,c] ![0,0,0] = ![![0],![0]] := by
+  unfold getCoeffs
+  generalize ((A ![a, b, c]ᵀ.mulᵣ (A ![a, b, c]))⁻¹.mulᵣ (A ![a, b, c]ᵀ)) = x
+  have : x = !![x 0 0, x 0 1, x 0 2;
+                x 1 0, x 1 1, x 1 2] := by
+    ext i j; fin_cases i <;> fin_cases j <;> simp
+  rw [this]
+  ext i j; fin_cases i <;> fin_cases j <;> simp
