@@ -326,20 +326,66 @@ theorem star_projection_is_matrix_product (x y : Fin 3 → ℝ)
   simp
 
 
-example (x y i)
+theorem getCoeffs_eq_regression_coordinates₁ (x y i)
   (hl : LinearIndependent ℝ (Kvec₁ x))
+  (hB : IsUnit (!![x 0, 1; x 1, 1; x 2, 1]ᵀ * !![x 0, 1; x 1, 1; x 2, 1]).det)
   :  getCoeffs x y i 0
   = regression_coordinates₁ x y hl i := by
   unfold getCoeffs regression_coordinates₁
-  have := @star_projection_is_matrix_product x y sorry
+  have := @star_projection_is_matrix_product x y hB
   simp_rw [← this]
-  unfold K₁ A
-  simp
-  rw [LinearIndependent.repr_eq]
-  sorry
-  sorry
-  sorry
+  unfold K₁ A Kvec₁
+  simp only [Module.Basis.mk_repr]
+  rw [LinearIndependent.repr_eq
+    ( l:= {
+        toFun := fun i => ((!![x 0, 1; x 1, 1; x 2, 1]ᵀ.mulᵣ !![x 0, 1; x 1, 1; x 2, 1])⁻¹.mulᵣ (!![x 0, 1; x 1, 1; x 2, 1]ᵀ)).mulᵣ
+            !![y 0; y 1; y 2] i 0
+        support := {a | ((!![x 0, 1; x 1, 1; x 2, 1]ᵀ.mulᵣ !![x 0, 1; x 1, 1; x 2, 1])⁻¹.mulᵣ (!![x 0, 1; x 1, 1; x 2, 1]ᵀ)).mulᵣ
+         !![y 0; y 1; y 2] a 0 ≠
+            0}
+        mem_support_toFun := by simp
+    })
+  ]
+  · simp
+  refine Subtype.coe_eq_of_eq_mk ?_
 
+  generalize !![y 0; y 1; y 2] = z
+  let X := !![x 0, 1; x 1, 1; x 2, 1]
+  show _ =
+  fun i ↦
+  X.mulᵣ
+    (((Xᵀ.mulᵣ X)⁻¹.mulᵣ (Xᵀ)).mulᵣ z) i 0
+  conv =>
+    left
+    right
+    right
+    left
+    change fun i ↦ ((Xᵀ.mulᵣ X)⁻¹.mulᵣ (Xᵀ)).mulᵣ z i 0
+  have : X = !![x 0, 1; x 1, 1; x 2, 1] := rfl
+  simp_rw [← this]
+  let Y := ((Xᵀ.mulᵣ X)⁻¹.mulᵣ (Xᵀ)).mulᵣ z
+  have : Y = ( ((Xᵀ.mulᵣ X)⁻¹.mulᵣ (Xᵀ)).mulᵣ z) := rfl
+  simp_rw [← this]
+  rw [Finsupp.linearCombination_apply]
+  simp
+  rw [Finsupp.sum]
+  unfold X
+  ext i;fin_cases i <;> (
+    simp [Matrix.vecMul, Matrix.vecHead, Matrix.vecTail]
+    rw [Finset.sum_filter]
+    simp
+    split_ifs with g₀ g₁ g₂
+    simp
+    rw [g₀,g₁]
+    simp
+    rw [g₀]
+    simp
+    rw [g₂]
+    simp
+    rw [mul_comm]
+    simp
+    rw [mul_comm]
+    )
 
 example : getCoeffs ![0,1,2] ![0,1,1] = !![1/2;1/6] := by
   unfold getCoeffs A
