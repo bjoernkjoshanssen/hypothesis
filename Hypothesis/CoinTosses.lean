@@ -1,12 +1,3 @@
-
-def generateRandomFloat (minVal maxVal wantMax : Nat) : IO Float := do
-  let randNat ← IO.rand minVal maxVal  -- Generate random Nat
-  -- let scaledFloat := minVal.toFloat + (maxVal.toFloat - minVal.toFloat) * (randNat.toFloat / (maxVal.toFloat - minVal.toFloat))
-  let scaledFloat := (wantMax.toFloat) *
-    (randNat.toFloat / (maxVal.toFloat))
-
-  return scaledFloat
-
 -- #eval (5: Nat).toFloat / (3 : Nat).toFloat
 
 def getRandomBool : IO Bool := do
@@ -14,12 +5,6 @@ def getRandomBool : IO Bool := do
   pure (r == 1)      -- Return true if the number is 1, false otherwise
 
 def main : IO Unit := do
-  let min := 0
-  let max := 10000000
-  let wantMax := 20
-  for _ in [0 : 20] do
-    let randomFloat ← generateRandomFloat min max wantMax
-    IO.println s!"Random float: {randomFloat}"
   let mut numberOfTrue := 0
   for _ in [0 : 200] do
     let randomBool ← getRandomBool

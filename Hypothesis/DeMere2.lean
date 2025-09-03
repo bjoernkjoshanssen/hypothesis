@@ -8,5 +8,5 @@ def tossDice : IO Unit := do
     let myDie₁ ← IO.rand 1 6
     IO.println s!"Random dice: {myDie₀}, {myDie₁}"
     if (myDie₀ == 6 ∧ myDie₁ == 6) then
-      IO.println s!"Six!"
+      IO.println s!"Snake eyes!"
 #eval tossDice
