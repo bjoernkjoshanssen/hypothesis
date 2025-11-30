@@ -29,126 +29,88 @@ noncomputable def studentTDistribution (ν : ℝ) : ℝ → ℝ := fun x =>
 noncomputable def logNormalPdf (μ σ : ℝ) : ℝ → ℝ := fun x =>
   (1 / (σ * √(2 * π))) * (x ^ (-(1:ℝ) ) * exp ((-1 / (2 * σ^2)) * (log x - μ) ^ 2))
 
-lemma derivLogNormal (μ σ : ℝ) (hσ : 0 < σ) (x : ℝ) (hx : x ≠ 0) : deriv (logNormalPdf μ σ) x =
+lemma rpow_neg_one_int {x : ℝ} (hx : x ≠ 0) (s e : ℝ) :
+    e * (x ^ (-1 : ℝ)) ^ (2) * s * x ^ (2:ℤ) = e * s := by
+    rw [rpow_neg_one]
+    field_simp
+    left
+    rfl
+
+/-- A bit surprising that `σ` does not need to be positive here. -/
+lemma derivLogNormal (μ σ : ℝ) (x : ℝ) (hx : x ≠ 0) : deriv (logNormalPdf μ σ) x =
   1 / (σ * √(2 * π))
   * rexp (-1 / (2 * σ ^ 2) * (log x - μ) ^ 2)
-  * x ^ (- (2:ℝ)) * (
-    (-1 + ((-1 / (σ ^ 2) * ((log x - μ) ))))) := by
+  * x ^ (- (2:ℝ)) * (-1 + (-1 / (σ ^ 2) * (log x - μ))) := by
+  have h₂ : DifferentiableAt ℝ (fun x ↦ log x - μ) x := by
+    simp
+    exact hx
+  have h₀ : DifferentiableAt ℝ (fun x ↦ -1 / (2 * σ ^ 2) * (log x - μ) ^ 2) x :=
+    (h₂.fun_pow 2).const_mul _
   unfold logNormalPdf
+  have h₁ := differentiableAt_rpow_const_of_ne (-1) hx
   rw [deriv_const_mul]
   conv =>
-    left
-    right
-    change deriv ((fun x ↦ (x ^ (-(1:ℝ) ))) * (fun x => rexp (-1 / (2 * σ ^ 2) * (log x - μ) ^ 2))) x
+    left; right
+    change deriv ((fun x ↦ x ^ (-(1:ℝ) )) * fun x => rexp (-1 / (2 * σ ^ 2) * (log x - μ) ^ 2)) x
   rw [deriv_mul]
-  conv =>
-    left
-    right
-    right
-    right
-    change deriv (rexp ∘ fun x ↦ (-1 / (2 * σ ^ 2) * (log x - μ) ^ 2)) x
+  have (f : ℝ → ℝ) : (fun x ↦ rexp (f x)) = rexp ∘ f := rfl
+  rw [this]
+  rw [deriv_comp _ differentiableAt_exp, Real.deriv_exp, deriv_const_mul, Real.deriv_rpow_const]
+  have (f : ℝ → ℝ) : (fun x ↦ (f x) ^ 2) = (fun x => x^2) ∘ f := rfl
+  rw [this]
   rw [deriv_comp]
-  rw [Real.deriv_exp]
-  rw [deriv_const_mul]
-  rw [Real.deriv_rpow_const]
-  conv =>
-    left
-    right
-    right
-    right
-    right
-    right
-    change deriv ((fun x => x^2) ∘ (fun x => log x - μ)) x
-  rw [deriv_comp]
+  · simp
+    have : x ^ (-(1:ℝ) - 1) = x ^ (- (2:ℝ)) := by
+      ring_nf
+    rw [this]
+    rw [← rpow_neg_one x]
+    generalize rexp (-1 / (2 * σ ^ 2) * (log x - μ) ^ 2) = r
+    generalize log x - μ = s
+    field_simp
 
-  simp
-  have : x ^ (-(1:ℝ) - 1) = x ^ (- (2:ℝ)) := by
     ring_nf
-  rw [this]
-  have : x⁻¹ = x ^ (-(1:ℝ)) := Eq.symm (rpow_neg_one x)
-  rw [this]
-  generalize rexp (-1 / (2 * σ ^ 2) * (log x - μ) ^ 2) = r
-  generalize (log x - μ) = s
-  generalize (√π)⁻¹ * (√2)⁻¹ * σ⁻¹ = p
-  generalize σ ^ 2 = q
-  field_simp
+    rw [rpow_neg_one_int] ; tauto
+  · simp
+  · exact h₂
+  · exact .inl hx
+  · refine DifferentiableAt.fun_pow h₂ 2
+  · exact h₀
+  · exact h₁
+  · exact h₀.exp
+  · refine DifferentiableAt.fun_mul h₁ <| DifferentiableAt.exp h₀
 
-  ring_nf
-  generalize - (p * r) = w
-  generalize p * r = e
-  apply congrArg (HSub.hSub w)
-  have : e * (x ^ (-(1:ℝ))) ^ 2 * s * x ^ (2:ℤ) * q⁻¹
-    = e * ((x ^ (-1:ℝ)) ^ 2 * s * x ^ (2:ℤ) * q⁻¹) := by ring_nf
-  rw [this]
-  have : e * s * q⁻¹ = e * (s * q⁻¹) := by ring_nf
-  rw [this]
-  apply congrArg (HMul.hMul _)
-  have :  (x ^ (-1:ℝ)) ^ 2 * s * x ^ (2:ℤ) * q⁻¹
-    =  ((x ^ (-1:ℝ)) ^ 2 * s * x ^ (2:ℤ)) * q⁻¹  := by ring_nf
-  rw [this]
-  rw [mul_comm _ q⁻¹]
-  rw [mul_comm _ q⁻¹]
-  apply congrArg
-  have : (x ^ (-1:ℝ))^2 = (x ^ 2)⁻¹ := by
-    grind
-  rw [this]
-  ring_nf
-  field_simp
-  left
-  rfl
-  sorry
-  sorry
-  tauto
-  sorry
-  sorry
-  sorry
-  exact differentiableAt_rpow_const_of_ne (-1) hx
-  sorry
-  sorry
 
 /-- Auxiliary for the mode of the lognormal distribution. -/
-lemma deriv_lognormal_aux (σ μ x : ℝ) (hσ : σ ≠ 0) (hx : 0 < x)
-(h : (-1 + ((-1 / (σ ^ 2) * ((log x - μ) )))) = 0) :
+lemma mode_lognormal_equation {σ μ x : ℝ} (hσ : σ ≠ 0) (hx : 0 < x)
+(h : -1 + (-1 / (σ ^ 2) * (log x - μ)) = 0) :
 x = rexp (μ - σ ^ 2) := by
-    have h : ( ((-1 / (σ ^ 2) * ((log x - μ) )))) = 1 := by linarith
+    have h : -1 / (σ ^ 2) * (log x - μ) = 1 := by linarith
     have : -1 / σ^2 = - (1 / σ ^ 2) := by ring_nf
     rw [this] at h
     have h : (1 / σ ^ 2) * (log x - μ) = -1 := by linarith
-    have h : σ ^ 2 * ((1 / σ ^ 2) * (log x - μ))
-           = σ ^ 2 * (-1) := by rw [h]
-    have : log x - μ =  σ ^ 2 * (1 / σ ^ 2 * (log x - μ)) := by
-        simp
-        ring_nf
-        field_simp
-    rw [← this] at h
-    have h : log x - μ = -σ^2 := by linarith
+    field_simp at h
     have h : log x  = μ - σ^2 := by linarith
-    have : x = rexp (log x) := Eq.symm (exp_log hx)
-    rw [this]
-    rw [h]
+    rw [← h]
+    exact (exp_log hx).symm
 
-/-- The critical point of the lognormal distribution. -/
-lemma deriv_lognormal (σ μ x : ℝ) (hσ : 0 < σ) (hx : 0 < x)
+/-- The mode of the lognormal distribution. -/
+lemma mode_lognormal (σ μ x : ℝ) (hσ : σ ≠ 0) (hx : 0 < x)
 (h : deriv (logNormalPdf μ σ) x = 0) :
 x = rexp (μ - σ ^ 2) := by
     rw [derivLogNormal] at h
-    have := mul_eq_zero.mp h
-    cases this with
+    cases mul_eq_zero.mp h with
     | inl h =>
-        have := mul_eq_zero.mp h
-        cases this with
+        cases mul_eq_zero.mp h with
         | inl h =>
-            have := mul_eq_zero.mp h
-            cases this with
+            cases mul_eq_zero.mp h with
             | inl h =>
                 exfalso;simp at h
                 cases h with
-                | inl h => revert h;simp;refine sqrt_ne_zero'.mpr ?_;exact pi_pos
-                | inr h => linarith
+                | inl h => exact sqrt_ne_zero'.mpr pi_pos h
+                | inr h => exact hσ h
             | inr h => simp at h
         | inr h => exfalso;revert h;simp;refine zpow_ne_zero 2 ?_;linarith
-    | inr h => apply deriv_lognormal_aux;linarith;tauto;tauto
-    tauto
+    | inr h => exact mode_lognormal_equation hσ hx h
     linarith
 
 /-
@@ -158,13 +120,30 @@ if (-1 + ((-1 / (2 * σ ^ 2) * (2 * (log x - μ) )) = 0 then
 x = e^(μ - σ²/2)
 -/
 
+theorem derivStudent.extracted_1_1 {d e g h : ℝ} (f : ℝ) (this : d * e = g * h) :
+  d * -f * e = -(f * g * h) := by
+      ring_nf at this ⊢
+      simp
+      rw [this]
+      left
+      rfl
+
+lemma tHelper {ν : ℝ} (hν : 0 ≤ ν) (x : ℝ) : 0 < 1 + x ^ 2 / ν := by
+    by_cases H : ν = 0
+    subst H;simp
+    calc (0:ℝ) < 1 := by simp
+        _ ≤ _ := by
+          suffices 0 ≤ x^2/ν by linarith
+          positivity
+
 /-- The messy formula for the derivative of Student's `t`. -/
-lemma derivStudent {ν : ℝ} (hν : 0 < ν) : deriv (studentTDistribution ν) =
+lemma derivStudent {ν : ℝ} (hν : 0 ≤ ν) : deriv (studentTDistribution ν) =
     fun x => ((Gamma ((ν + 1) / 2)) / (√(π * ν) * Gamma (ν/2)))
            * ((- ((ν + 1) / 2)) * (1 + x^2/ν) ^ (- ((ν + 3) / 2))
            * (2*x/ν)) := by
-  unfold studentTDistribution
   ext x
+  have h₀ :  1 + x ^ 2 / ν ≠ 0 := ne_of_gt <| tHelper hν _
+  unfold studentTDistribution
   rw [deriv_const_mul]
   congr
   simp
@@ -174,48 +153,24 @@ lemma derivStudent {ν : ℝ} (hν : 0 < ν) : deriv (studentTDistribution ν) =
     by_cases H : ((ν + 1) / 2) = 0
     · rw [H]
       simp
-    · generalize deriv (fun x ↦ 1 + x ^ 2 / ν) x = d at *
-      generalize  (1 + x ^ 2 / ν) ^ (-((ν + 1) / 2) - 1) = e at *
-      generalize (ν + 1) / 2 = f at *
-      generalize (1 + x ^ 2 / ν) ^ (-((ν + 3) / 2)) = g at *
-      generalize (2 * x / ν) = h at *
-      ring_nf at this ⊢
-      simp
-      rw [this]
-      left
-      rfl
+    · apply derivStudent.extracted_1_1 _ this
   conv =>
-    left
-    left
-    left
+    left; left; left
     change (fun x => 1) + (fun x => x ^ 2 / ν)
   rw [deriv_add]
   simp
-  generalize (2 * x / ν) = a
-  have : (-((ν + 1) / 2) - 1) = (-((ν + 3) / 2)) := by linarith
-  rw [this]
   rw [mul_comm]
   simp
-  simp
-  apply Differentiable.fun_add
-  simp
-  simp
   left
-  apply ne_of_gt
-  calc (0:ℝ) < 1 := by simp
-       _ ≤ _ := by
-        suffices 0 ≤ x^2/ν by linarith
-        positivity
-  refine DifferentiableAt.rpow ?_ ?_ ?_
-  apply Differentiable.fun_add
+  congr
+  ring_nf
+  field_simp
   simp
-  simp
-  exact differentiableAt_const (-((ν + 1) / 2))
-  apply ne_of_gt
-  calc (0:ℝ) < 1 := by simp
-       _ ≤ _ := by
-        suffices 0 ≤ x^2/ν by linarith
-        positivity
+  · apply Differentiable.fun_add (by simp) (by simp)
+  · exact .inl h₀
+  refine DifferentiableAt.rpow ?_ ?_ h₀
+  · apply Differentiable.fun_add <;> simp
+  · exact differentiableAt_const _
 
 -- /-- The messy formula for the derivative of Student's `t`. -/
 -- lemma derivStudent₂ {ν : ℝ} (hν : 0 < ν) : deriv (deriv (studentTDistribution ν)) =
@@ -238,11 +193,10 @@ lemma derivStudent {ν : ℝ} (hν : 0 < ν) : deriv (studentTDistribution ν) =
 
 /-- The only place the derivative of Student's `t` is 0 is 0. -/
 lemma derivStudent' (x ν : ℝ) (hν : 0 < ν) :
-    deriv (studentTDistribution ν) x = 0 ↔
-    x = 0 := by
+    deriv (studentTDistribution ν) x = 0 ↔ x = 0 := by
   constructor
   intro h
-  rw [derivStudent hν] at h
+  rw [derivStudent (by linarith)] at h
   simp at h
 
   cases h with
@@ -254,11 +208,10 @@ lemma derivStudent' (x ν : ℝ) (hν : 0 < ν) :
       linarith
     | inr h => cases h with
       | inl h =>
-        exfalso;simp at h
-        revert h;simp;refine sqrt_ne_zero'.mpr ?_
-        apply mul_pos
-        exact pi_pos
-        tauto
+        rw [sqrt_eq_zero, mul_eq_zero] at h
+        rcases h <;> linarith [pi_pos]
+        apply mul_nonneg pi_nonneg
+        linarith
       | inr h =>
         exfalso;simp at h
         revert h
@@ -274,26 +227,20 @@ lemma derivStudent' (x ν : ℝ) (hν : 0 < ν) :
         revert h
         simp
         refine (rpow_ne_zero ?_ ?_).mpr ?_
-        calc _ ≤ (1:ℝ) := by simp
-             _ ≤ _ := by
-              suffices 0 ≤ x^2/ν by linarith
-              positivity
+        apply le_of_lt
+        exact tHelper (by linarith) _
         simp
         linarith
-        apply ne_of_gt
-        calc (0:ℝ) < 1 := by simp
-             _ ≤ _ := by
-              suffices 0 ≤ x^2/ν by linarith
-              positivity
+        apply ne_of_gt <| tHelper (by linarith) _
     | inr h => cases h with
       | inl h => tauto
       | inr h => linarith
   intro h
-  rw [derivStudent hν, h]
+  rw [derivStudent (by linarith), h]
   simp
 
 
-
+/-- The Student t distribution with one df is the Cauchy distribution. -/
 lemma studentTDistribution_one (x : ℝ) : studentTDistribution 1 x = 1 / (π * (1 + x^2)) := by
   unfold studentTDistribution
   simp
@@ -303,53 +250,33 @@ lemma studentTDistribution_one (x : ℝ) : studentTDistribution 1 x = 1 / (π * 
   ring_nf
   rw [mul_comm]
   congr
-  exact rpow_neg_one (1 + x ^ 2)
+  exact rpow_neg_one _
   simp
-  refine sq_sqrt ?_
-  positivity
+  refine sq_sqrt pi_nonneg
 
+/-- The t distribution pdf has an everywhere-positive pdf. -/
 lemma studentTDistribution_pos (x ν : ℝ) (hν : ν > 0) : studentTDistribution ν x > 0 := by
-  unfold studentTDistribution
-  simp
+  simp [studentTDistribution]
   refine mul_pos ?_ ?_
-  refine div_pos ?_ ?_
-  refine Gamma_pos_of_pos ?_
-  linarith
-  refine mul_pos ?_ ?_
-  simp
-  refine mul_pos ?_ ?_
-  exact pi_pos
-  exact hν
-  refine Gamma_pos_of_pos ?_
-  linarith
-  refine rpow_pos_of_pos ?_ (-((ν + 1) / 2))
-  have : 0 ≤ x ^ 2 / ν := by
-    refine div_nonneg ?_ ?_
-    positivity
-    linarith
-  linarith
+  · refine div_pos ?_ ?_
+    exact Gamma_pos_of_pos (by linarith)
+    refine mul_pos ?_ ?_
+    · rw [sqrt_pos]
+      exact mul_pos pi_pos hν
+    · exact Gamma_pos_of_pos (by linarith)
+  · refine rpow_pos_of_pos ?_ _
+    apply tHelper; linarith
 
 /-- The pdf of the Student `t` distribution with 2 degrees of freedom. -/
-  example (x : ℝ) : studentTDistribution 2 x = (1 / (2 * √2)) * (1 + x^2/2) ^ (- (3:ℝ)/2) := by
-  unfold studentTDistribution
-  simp
-  have : Gamma ((2+1)/2) = Gamma (1 + 2⁻¹) := by
-    congr
-    ring_nf
-  rw [this]
+  lemma studentT2Pdf (x : ℝ) : studentTDistribution 2 x = (1 / (2 * √2)) * (1 + x^2/2) ^ (- (3:ℝ)/2) := by
+  simp [studentTDistribution]
+  rw [show Gamma ((2+1)/2) = Gamma (1 + 2⁻¹) by ring_nf]
   have := Real.Gamma_nat_add_half 1
   simp at this
   rw [this]
   ring_nf
-  have : √π * (√π)⁻¹ = 1 := by
-    refine CommGroupWithZero.mul_inv_cancel √π ?_;simp
-    have : π ≠ 0 := pi_ne_zero
-    contrapose! this
-    have : (√π)^2=√0 := by rw [this];simp
-    have h₀ : (√π)^2 = π := by refine sq_sqrt ?_;exact pi_nonneg
-    rw [← h₀]
-    rw [this]
-    simp
+  have : √π * (√π)⁻¹ = 1 :=
+    mul_inv_cancel₀ fun h => pi_ne_zero <| (sqrt_eq_zero pi_nonneg).mp h
   rw [this]
   simp
 
@@ -358,39 +285,32 @@ lemma studentTDistribution_pos (x ν : ℝ) (hν : ν > 0) : studentTDistributio
     simp [studentTDistribution]
     refine (mul_lt_mul_left ?_).mpr ?_
     apply mul_pos
-    refine Gamma_pos_of_pos ?_
-    linarith
+    exact Gamma_pos_of_pos <| by linarith
     simp
     apply mul_pos
     simp
-    refine Gamma_pos_of_pos ?_
-    linarith
+    exact Gamma_pos_of_pos <| by linarith
     simp
-    apply mul_pos
-    exact pi_pos
-    exact hν
-    refine rpow_lt_rpow_of_exponent_neg ?_ ?_ ?_
-    calc (0:ℝ) < 1 := by simp
-         _ ≤ _ := by simp;positivity
-    simp
-    apply div_lt_div₀
-    have := h.2
-    repeat rw [pow_two]
-    by_cases H : x₁ = 0
-    rw [H]
-    simp
-    linarith
-
-    refine mul_lt_mul_of_pos_of_nonneg' this ?_ ?_ ?_
-    linarith
-    contrapose! H
-    linarith [h.1]
-    linarith [h.1]
-    simp
-    positivity
-    tauto
-    simp
-    linarith
+    apply mul_pos pi_pos hν
+    apply rpow_lt_rpow_of_exponent_neg
+    · apply tHelper
+      linarith
+    · simp
+      apply div_lt_div₀
+      repeat rw [pow_two]
+      by_cases H : x₁ = 0
+      · rw [H]
+        simp
+        linarith [h.2]
+      · refine mul_lt_mul_of_pos_of_nonneg' h.2 ?_ ?_ ?_
+        · linarith [h.2]
+        · contrapose! H
+          linarith [h.1]
+        · linarith [h.1, h.2]
+      · simp
+      · positivity
+      · tauto
+    · linarith
 
   lemma studentTSymmetric (x ν : ℝ) : studentTDistribution ν x = studentTDistribution ν (-x) := by
     simp [studentTDistribution]
@@ -440,6 +360,16 @@ lemma studentTMin (a ν : ℝ) (hν : 0 < ν) : ¬ IsLocalMin (studentTDistribut
       · linarith
     · positivity
     · apply div_nonneg <;> positivity
+
+lemma studentTMax (ν : ℝ) (hν : 0 ≤ ν) :
+  IsLocalMax (studentTDistribution ν) 0 := by
+  rw [IsLocalMax, IsMaxFilter]
+  refine eventually_nhds_iff.mpr ?_
+  use Set.univ
+  simp
+  intro y
+  apply studentTMode _ _ hν
+
 
 
 noncomputable def Bar {n : ℕ} : (Fin n → ℝ) → ℝ := fun X => (1 / n) * ∑ i, X i

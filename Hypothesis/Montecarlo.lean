@@ -14,13 +14,13 @@ def generateRandomFloat (minVal maxVal : Nat) (wantMax : ℚ) : IO Float := do
 
 def main : IO Unit := do
   let min := 0
-  let max := 10000000
+  let max := 100000 -- precision
   let mut above := 0
   let mut below := 0
   let wantMax := 1 --20
   let myPi : ℚ := 3.1415926535
   let wantMaxX : ℚ := myPi
-  let rounds := 2000
+  let rounds := 20
   for _ in [0 : rounds] do
     let randomFloat₁ ← generateRandomFloat min max wantMaxX
     let randomFloat₂ ← generateRandomFloat min max wantMax

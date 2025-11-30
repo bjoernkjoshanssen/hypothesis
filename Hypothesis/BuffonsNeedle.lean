@@ -10,7 +10,7 @@ def generateRandomFloat (minVal maxVal : Nat) (wantMax : ℚ) : IO Float := do
 
 def main : IO Unit := do
   let myPi : ℚ := 3.1415926535
-  let n := 100000 -- The Number of Needles used
+  let n := 1000000        -- The Number of Needles used
   let mut center_x : Float := 0
   let mut center_y : Float := 0
   let mut delta_x : Float := 0

@@ -51,6 +51,21 @@ noncomputable def getCoeffs {m : ℕ} {R : Type*} [RCLike R] (x y : Fin m → R)
   Matrix.mulᵣ (Matrix.mulᵣ (Matrix.mulᵣ ((A x)ᵀ) (A x))⁻¹ ((A x)ᵀ))
   (fun i (_ : Fin 1) => y i)
 
+/-- getCoeffs is supposed to mimize this -/
+def theDistance {m : ℕ} {R : Type*} [RCLike R] (x y : Fin m → R)
+  (M : Matrix (Fin 2) (Fin 1) R) : R :=
+  Finset.sum (Finset.univ : Finset (Fin m))
+    (fun i => by exact (y i - (M 0 0 + (M 1 0) * (x i)))^2)
+
+/-- `getCoeffs` minimizes `theDistance`. -/
+theorem getCoeffs_minimizes_theDistance
+   {m : ℕ} {R : Type*} [RCLike R] [LE R] (x y : Fin m → R) (M : Matrix (Fin 2) (Fin 1) R)
+: ∀ a b : R,
+  theDistance x y (getCoeffs x y) ≤ theDistance x y M := by
+  intro a b
+  unfold theDistance getCoeffs
+  -- use Second Derivative Test with f = theDistance x y ?
+  sorry
 
 lemma matrix_smul {m : ℕ} {R : Type*} [RCLike R] (b : Matrix (Fin m) (Fin 1) R)
     (v : Matrix (Fin 2) (Fin 2) R) (c : R)
@@ -1316,7 +1331,7 @@ noncomputable def regression_coordinates₂ {n : ℕ} (x₀ x₁ y : Fin n → �
 
 lemma indep₀₁₂ : LinearIndependent ℝ (Kvec₁ ![(0 : ℝ), 1, 2]) := by
     simp [Kvec₁]
-    refine LinearIndependent.pair_iff.mpr ?_
+    apply LinearIndependent.pair_iff.mpr
     intro s t h
     simp at h
     have : ![s * 0, s * 1, s * 2] + ![t * 1, t * 1, t * 1] = 0 := by
@@ -1436,7 +1451,7 @@ example : Unit := by
               obtain ⟨i,hi⟩ := g₀
               have : (if 0 ∈ s i then (1 : ENNReal) else 0) = 1 := by
                 rw [if_pos hi]
-              norm_num
+              -- norm_num
               nth_rw 1 [← this]
               exact ENNReal.le_tsum i
               positivity
