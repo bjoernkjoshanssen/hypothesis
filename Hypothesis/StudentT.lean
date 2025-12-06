@@ -1,19 +1,9 @@
-import Mathlib.Analysis.InnerProductSpace.PiL2
-import Mathlib.Data.Matrix.Mul
-import Mathlib.MeasureTheory.Function.ConditionalExpectation.CondexpL1
-import Mathlib.Analysis.SpecialFunctions.Trigonometric.Arctan
-import Mathlib.Analysis.SpecialFunctions.Gamma.Basic
 import Mathlib.Analysis.SpecialFunctions.Gaussian.GaussianIntegral
-import Mathlib.Analysis.Calculus.Deriv.Mul
+import Mathlib.MeasureTheory.Measure.RegularityCompacts
 import Mathlib.Probability.Independence.Basic
-import Mathlib.Probability.Distributions.Gaussian.Real
-
-
-import Mathlib.MeasureTheory.Measure.Hausdorff
-import Mathlib.MeasureTheory.Measure.ProbabilityMeasure
-import Mathlib.Probability.ProbabilityMassFunction.Basic
-import Mathlib.Analysis.SpecialFunctions.Log.Base
 import Mathlib.Probability.ProbabilityMassFunction.Constructions
+import Mathlib.MeasureTheory.Function.ConditionalExpectation.Basic
+
 -- import IO
 
 /-!
@@ -37,7 +27,7 @@ lemma rpow_neg_one_int {x : ℝ} (hx : x ≠ 0) (s e : ℝ) :
     rfl
 
 /-- A bit surprising that `σ` does not need to be positive here. -/
-lemma derivLogNormal (μ σ : ℝ) (x : ℝ) (hx : x ≠ 0) : deriv (logNormalPdf μ σ) x =
+lemma derivLogNormal (μ σ : ℝ) {x : ℝ} (hx : x ≠ 0) : deriv (logNormalPdf μ σ) x =
   1 / (σ * √(2 * π))
   * rexp (-1 / (2 * σ ^ 2) * (log x - μ) ^ 2)
   * x ^ (- (2:ℝ)) * (-1 + (-1 / (σ ^ 2) * (log x - μ))) := by
@@ -46,38 +36,31 @@ lemma derivLogNormal (μ σ : ℝ) (x : ℝ) (hx : x ≠ 0) : deriv (logNormalPd
     exact hx
   have h₀ : DifferentiableAt ℝ (fun x ↦ -1 / (2 * σ ^ 2) * (log x - μ) ^ 2) x :=
     (h₂.fun_pow 2).const_mul _
-  unfold logNormalPdf
   have h₁ := differentiableAt_rpow_const_of_ne (-1) hx
+  unfold logNormalPdf
   rw [deriv_const_mul]
   conv =>
     left; right
     change deriv ((fun x ↦ x ^ (-(1:ℝ) )) * fun x => rexp (-1 / (2 * σ ^ 2) * (log x - μ) ^ 2)) x
-  rw [deriv_mul]
+  rw [deriv_mul h₁ h₀.exp]
   have (f : ℝ → ℝ) : (fun x ↦ rexp (f x)) = rexp ∘ f := rfl
   rw [this]
-  rw [deriv_comp _ differentiableAt_exp, Real.deriv_exp, deriv_const_mul, Real.deriv_rpow_const]
+  rw [deriv_comp _ differentiableAt_exp h₀, Real.deriv_exp,
+    deriv_const_mul _ (DifferentiableAt.fun_pow h₂ 2), Real.deriv_rpow_const (.inl hx)]
   have (f : ℝ → ℝ) : (fun x ↦ (f x) ^ 2) = (fun x => x^2) ∘ f := rfl
   rw [this]
-  rw [deriv_comp]
+  rw [deriv_comp x (by simp) h₂]
   · simp
     have : x ^ (-(1:ℝ) - 1) = x ^ (- (2:ℝ)) := by
       ring_nf
-    rw [this]
-    rw [← rpow_neg_one x]
+    rw [this, ← rpow_neg_one x]
     generalize rexp (-1 / (2 * σ ^ 2) * (log x - μ) ^ 2) = r
     generalize log x - μ = s
     field_simp
-
     ring_nf
-    rw [rpow_neg_one_int] ; tauto
-  · simp
-  · exact h₂
-  · exact .inl hx
-  · refine DifferentiableAt.fun_pow h₂ 2
-  · exact h₀
-  · exact h₁
-  · exact h₀.exp
-  · refine DifferentiableAt.fun_mul h₁ <| DifferentiableAt.exp h₀
+    rw [rpow_neg_one_int]
+    tauto
+  · exact DifferentiableAt.fun_mul h₁ <| DifferentiableAt.exp h₀
 
 
 /-- Auxiliary for the mode of the lognormal distribution. -/
@@ -109,7 +92,11 @@ x = rexp (μ - σ ^ 2) := by
                 | inl h => exact sqrt_ne_zero'.mpr pi_pos h
                 | inr h => exact hσ h
             | inr h => simp at h
-        | inr h => exfalso;revert h;simp;refine zpow_ne_zero 2 ?_;linarith
+        | inr h =>
+            exfalso
+            revert h
+            simp
+            exact zpow_ne_zero 2 (ne_of_lt hx).symm
     | inr h => exact mode_lognormal_equation hσ hx h
     linarith
 
@@ -121,12 +108,12 @@ x = e^(μ - σ²/2)
 -/
 
 theorem derivStudent.extracted_1_1 {d e g h : ℝ} (f : ℝ) (this : d * e = g * h) :
-  d * -f * e = -(f * g * h) := by
-      ring_nf at this ⊢
-      simp
-      rw [this]
-      left
-      rfl
+      d * -f * e = -(f * g * h) := by
+  ring_nf at this ⊢
+  simp
+  rw [this]
+  left
+  rfl
 
 lemma tHelper {ν : ℝ} (hν : 0 ≤ ν) (x : ℝ) : 0 < 1 + x ^ 2 / ν := by
     by_cases H : ν = 0
@@ -232,9 +219,8 @@ lemma derivStudent' (x ν : ℝ) (hν : 0 < ν) :
         simp
         linarith
         apply ne_of_gt <| tHelper (by linarith) _
-    | inr h => cases h with
-      | inl h => tauto
-      | inr h => linarith
+    | inr h =>
+        cases h <;> linarith
   intro h
   rw [derivStudent (by linarith), h]
   simp
@@ -244,15 +230,14 @@ lemma derivStudent' (x ν : ℝ) (hν : 0 < ν) :
 lemma studentTDistribution_one (x : ℝ) : studentTDistribution 1 x = 1 / (π * (1 + x^2)) := by
   unfold studentTDistribution
   simp
-  have := Real.Gamma_nat_add_half 0
-  simp at this
+  have : Gamma 2⁻¹ = √π := by simpa using Real.Gamma_nat_add_half 0
   rw [this]
-  ring_nf
   rw [mul_comm]
   congr
-  exact rpow_neg_one _
-  simp
-  refine sq_sqrt pi_nonneg
+  · exact rpow_neg_one _
+  · ring_nf
+    simp
+    refine sq_sqrt pi_nonneg
 
 /-- The t distribution pdf has an everywhere-positive pdf. -/
 lemma studentTDistribution_pos (x ν : ℝ) (hν : ν > 0) : studentTDistribution ν x > 0 := by
@@ -265,7 +250,7 @@ lemma studentTDistribution_pos (x ν : ℝ) (hν : ν > 0) : studentTDistributio
       exact mul_pos pi_pos hν
     · exact Gamma_pos_of_pos (by linarith)
   · refine rpow_pos_of_pos ?_ _
-    apply tHelper; linarith
+    apply tHelper <| le_of_lt hν
 
 /-- The pdf of the Student `t` distribution with 2 degrees of freedom. -/
   lemma studentT2Pdf (x : ℝ) : studentTDistribution 2 x = (1 / (2 * √2)) * (1 + x^2/2) ^ (- (3:ℝ)/2) := by
@@ -370,10 +355,16 @@ lemma studentTMax (ν : ℝ) (hν : 0 ≤ ν) :
   intro y
   apply studentTMode _ _ hν
 
+/-!
 
+# RANDOM VARIABLES
 
+-/
+
+/-- The sample mean. -/
 noncomputable def Bar {n : ℕ} : (Fin n → ℝ) → ℝ := fun X => (1 / n) * ∑ i, X i
 
+/-- The sample standard deviation. -/
 noncomputable def S {n : ℕ} : (Fin n → ℝ) → ℝ := fun X =>
     √(1 / (n - 1) * ∑ i, (X i - Bar X) ^ 2)
 
@@ -395,31 +386,37 @@ noncomputable def BF {n : ℕ} : (Fin n → ℝ) → (Fin n → ℝ) → ℝ := 
 
 
 -- wrong
-def BehrensFisher : Prop :=
-    ∀ (m n : ℕ), ∃ T : (Fin (m + n) → ℝ) → ℝ,
-        ∀ (σ₁ σ₂ : NNReal) (r : ℝ),
-        MeasureTheory.Measure.pi
-            (fun _ => ProbabilityTheory.gaussianReal 0 σ₁)
-            (fun x  => T x ≤ r) =
-        MeasureTheory.Measure.pi
-            (fun _ => ProbabilityTheory.gaussianReal 0 σ₂)
-            (fun x => T x ≤ r)
-        -- and 𝔼 T = 0 and ...
+-- def BehrensFisher : Prop :=
+--     ∀ (m n : ℕ), ∃ T : (Fin (m + n) → ℝ) → ℝ,
+--         ∀ (σ₁ σ₂ : NNReal) (r : ℝ),
+--         MeasureTheory.Measure.pi
+--             (fun _ => ProbabilityTheory.gaussianReal 0 σ₁)
+--             (fun x  => T x ≤ r) =
+--         MeasureTheory.Measure.pi
+--             (fun _ => ProbabilityTheory.gaussianReal 0 σ₂)
+--             (fun x => T x ≤ r)
+--         -- and 𝔼 T = 0 and ...
+-- end Behrens
 
-end Behrens
-
-example : Unit := by
-    let X := ![1,1,(5:ℝ)]
-    have : Bar X = 7/3 := by unfold Bar X;simp;sorry
-    sorry
+lemma compute_sample_mean_example : Bar ![1,1,(5:ℝ)] = 7/3 := by
+    unfold Bar;simp
+    have : ∑ x, ![(1:ℝ),1,5] x = 1 + ∑ x, ![(1:ℝ),5] x := by rfl
+    rw [this]
+    have : ∑ x, ![(1:ℝ),5] x = 1 + ∑ x, ![5] x := by rfl
+    rw [this]
+    simp
+    linarith
 
 /-- This example corrects an error in `s4cs` (2019). -/
 example {Ω : Type*} (X : Fin 2 → (Ω → ℝ)) (μX : ℝ)
   (T S Xbar : (Fin 2 → Ω) → ℝ)
-  (hX : ∀ ω, Xbar ω = (1/2) * ∑ i, X i (ω i)) -- so the X i are "independent by construction"
-  (hS : ∀ ω, S ω = √((1/(2 - 1)) * ∑ i, (X i (ω i) - Xbar ω)^2))
-  (hT : ∀ v, T v = (Xbar v - μX) / ((1 / √2) * S v)) :
-  T = fun ω => ((1/2) * (X 0 (ω 0) + X 1 (ω 1) ) - μX) /
+  (hX : Xbar = fun ω => (1/2) * ∑ i, X i (ω i)) -- so the X i are "independent by construction"
+  (hS : S = fun ω =>
+    √((1/(2 - 1)) * ∑ i, (X i (ω i) - Xbar ω)^2))
+  (hT : T = fun ω =>
+    (Xbar ω - μX) / ((1 / √2) * S ω)) :
+  T = fun ω =>
+    ((1/2) * (X 0 (ω 0) + X 1 (ω 1) ) - μX) /
     ((1/2) * abs (X 0 (ω 0) - X 1 (ω 1) ) ) := by
   ext ω
   rw [hT, hS, hX]
