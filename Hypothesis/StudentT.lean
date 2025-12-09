@@ -12,12 +12,31 @@ import Mathlib.MeasureTheory.Function.ConditionalExpectation.Basic
 -/
 
 open Real
-noncomputable def studentTDistribution (ν : ℝ) : ℝ → ℝ := fun x =>
+/-- The probability density function for the Student t distribution with `ν` degrees of freedom.
+-/
+noncomputable def t_pdf (ν : ℝ) : ℝ → ℝ := fun x =>
 ((Gamma ((ν + 1) / 2)) / (√(π * ν) * Gamma (ν/2))) *  (1 + x^2/ν) ^ (- ((ν + 1) / 2))
 
 
+/-- The probability density function for lognormal distribution with parameters `μ`
+and `σ`.
+-/
 noncomputable def logNormalPdf (μ σ : ℝ) : ℝ → ℝ := fun x =>
   (1 / (σ * √(2 * π))) * (x ^ (-(1:ℝ) ) * exp ((-1 / (2 * σ^2)) * (log x - μ) ^ 2))
+
+noncomputable def logNormalPdf' (μ σ : ℝ) : ℝ → ℝ := fun x =>
+  (σ * √(2 * π))⁻¹ * x⁻¹ * exp (- (2 * σ^2)⁻¹ * (log x - μ) ^ 2)
+
+lemma logNormalPdf_eq_logNormalPdf' (μ σ : ℝ) :
+    logNormalPdf μ σ = logNormalPdf' μ σ := by
+    ext x
+    unfold logNormalPdf
+    unfold logNormalPdf'
+    rw [mul_assoc]
+    congr
+    simp
+    exact rpow_neg_one x
+    ring_nf
 
 lemma rpow_neg_one_int {x : ℝ} (hx : x ≠ 0) (s e : ℝ) :
     e * (x ^ (-1 : ℝ)) ^ (2) * s * x ^ (2:ℤ) = e * s := by
@@ -25,6 +44,13 @@ lemma rpow_neg_one_int {x : ℝ} (hx : x ≠ 0) (s e : ℝ) :
     field_simp
     left
     rfl
+
+lemma rpow_neg_one_int' {x : ℝ} (hx : x ≠ 0) (s e : ℝ) :
+    e * (x⁻¹) ^ (2) * s * x ^ (2:ℤ) = e * s := by
+    field_simp
+    left
+    rfl
+
 
 /-- A bit surprising that `σ` does not need to be positive here. -/
 lemma derivLogNormal (μ σ : ℝ) {x : ℝ} (hx : x ≠ 0) : deriv (logNormalPdf μ σ) x =
@@ -124,13 +150,13 @@ lemma tHelper {ν : ℝ} (hν : 0 ≤ ν) (x : ℝ) : 0 < 1 + x ^ 2 / ν := by
           positivity
 
 /-- The messy formula for the derivative of Student's `t`. -/
-lemma derivStudent {ν : ℝ} (hν : 0 ≤ ν) : deriv (studentTDistribution ν) =
+lemma derivStudent {ν : ℝ} (hν : 0 ≤ ν) : deriv (t_pdf ν) =
     fun x => ((Gamma ((ν + 1) / 2)) / (√(π * ν) * Gamma (ν/2)))
            * ((- ((ν + 1) / 2)) * (1 + x^2/ν) ^ (- ((ν + 3) / 2))
            * (2*x/ν)) := by
   ext x
   have h₀ :  1 + x ^ 2 / ν ≠ 0 := ne_of_gt <| tHelper hν _
-  unfold studentTDistribution
+  unfold t_pdf
   rw [deriv_const_mul]
   congr
   simp
@@ -160,7 +186,7 @@ lemma derivStudent {ν : ℝ} (hν : 0 ≤ ν) : deriv (studentTDistribution ν)
   · exact differentiableAt_const _
 
 -- /-- The messy formula for the derivative of Student's `t`. -/
--- lemma derivStudent₂ {ν : ℝ} (hν : 0 < ν) : deriv (deriv (studentTDistribution ν)) =
+-- lemma derivStudent₂ {ν : ℝ} (hν : 0 < ν) : deriv (deriv (t_pdf ν)) =
 --     fun x => ((Gamma ((ν + 1) / 2)) / (√(π * ν) * Gamma (ν/2)))
 --            * (- ((ν + 3) / 2)) * ((- ((ν + 1) / 2)) * (1 + x^2/ν) ^ (- ((ν + 5) / 2)) * (2 * x / ν)
 --            * (2*x/ν)) +
@@ -180,7 +206,7 @@ lemma derivStudent {ν : ℝ} (hν : 0 ≤ ν) : deriv (studentTDistribution ν)
 
 /-- The only place the derivative of Student's `t` is 0 is 0. -/
 lemma derivStudent' (x ν : ℝ) (hν : 0 < ν) :
-    deriv (studentTDistribution ν) x = 0 ↔ x = 0 := by
+    deriv (t_pdf ν) x = 0 ↔ x = 0 := by
   constructor
   intro h
   rw [derivStudent (by linarith)] at h
@@ -227,8 +253,8 @@ lemma derivStudent' (x ν : ℝ) (hν : 0 < ν) :
 
 
 /-- The Student t distribution with one df is the Cauchy distribution. -/
-lemma studentTDistribution_one (x : ℝ) : studentTDistribution 1 x = 1 / (π * (1 + x^2)) := by
-  unfold studentTDistribution
+lemma t_pdf_one (x : ℝ) : t_pdf 1 x = 1 / (π * (1 + x^2)) := by
+  unfold t_pdf
   simp
   have : Gamma 2⁻¹ = √π := by simpa using Real.Gamma_nat_add_half 0
   rw [this]
@@ -240,21 +266,20 @@ lemma studentTDistribution_one (x : ℝ) : studentTDistribution 1 x = 1 / (π * 
     refine sq_sqrt pi_nonneg
 
 /-- The t distribution pdf has an everywhere-positive pdf. -/
-lemma studentTDistribution_pos (x ν : ℝ) (hν : ν > 0) : studentTDistribution ν x > 0 := by
-  simp [studentTDistribution]
+lemma t_pdf_pos (x ν : ℝ) (hν : ν > 0) : t_pdf ν x > 0 := by
+  simp [t_pdf]
   refine mul_pos ?_ ?_
   · refine div_pos ?_ ?_
     exact Gamma_pos_of_pos (by linarith)
-    refine mul_pos ?_ ?_
-    · rw [sqrt_pos]
-      exact mul_pos pi_pos hν
-    · exact Gamma_pos_of_pos (by linarith)
+    refine mul_pos ?_ <| Gamma_pos_of_pos (by linarith)
+    rw [sqrt_pos]
+    exact mul_pos pi_pos hν
   · refine rpow_pos_of_pos ?_ _
     apply tHelper <| le_of_lt hν
 
 /-- The pdf of the Student `t` distribution with 2 degrees of freedom. -/
-  lemma studentT2Pdf (x : ℝ) : studentTDistribution 2 x = (1 / (2 * √2)) * (1 + x^2/2) ^ (- (3:ℝ)/2) := by
-  simp [studentTDistribution]
+  lemma studentT2Pdf (x : ℝ) : t_pdf 2 x = (1 / (2 * √2)) * (1 + x^2/2) ^ (- (3:ℝ)/2) := by
+  simp [t_pdf]
   rw [show Gamma ((2+1)/2) = Gamma (1 + 2⁻¹) by ring_nf]
   have := Real.Gamma_nat_add_half 1
   simp at this
@@ -266,8 +291,8 @@ lemma studentTDistribution_pos (x ν : ℝ) (hν : ν > 0) : studentTDistributio
   simp
 
   lemma studentTDecreasing {x₁ x₂ ν : ℝ} (hν : 0 < ν) (h : x₁ ∈ Set.Ico 0 x₂) :
-    studentTDistribution ν x₂ < studentTDistribution ν x₁ := by
-    simp [studentTDistribution]
+    t_pdf ν x₂ < t_pdf ν x₁ := by
+    simp [t_pdf]
     refine (mul_lt_mul_left ?_).mpr ?_
     apply mul_pos
     exact Gamma_pos_of_pos <| by linarith
@@ -297,11 +322,11 @@ lemma studentTDistribution_pos (x ν : ℝ) (hν : ν > 0) : studentTDistributio
       · tauto
     · linarith
 
-  lemma studentTSymmetric (x ν : ℝ) : studentTDistribution ν x = studentTDistribution ν (-x) := by
-    simp [studentTDistribution]
+  lemma studentTSymmetric (x ν : ℝ) : t_pdf ν x = t_pdf ν (-x) := by
+    simp [t_pdf]
 
   lemma studentTIncreasing {x₁ x₂ ν : ℝ} (hν : 0 < ν) (h : x₂ ∈ Set.Ioc x₁ 0) :
-    studentTDistribution ν x₁ < studentTDistribution ν x₂ := by
+    t_pdf ν x₁ < t_pdf ν x₂ := by
     rw [studentTSymmetric]
     nth_rw 2 [studentTSymmetric]
     apply studentTDecreasing hν
@@ -309,7 +334,7 @@ lemma studentTDistribution_pos (x ν : ℝ) (hν : ν > 0) : studentTDistributio
     exact ⟨h.2, h.1⟩
 
 /-- The Student `t` distribution pdf has no local minimum. -/
-lemma studentTMin (a ν : ℝ) (hν : 0 < ν) : ¬ IsLocalMin (studentTDistribution ν) a := by
+lemma studentTMin (a ν : ℝ) (hν : 0 < ν) : ¬ IsLocalMin (t_pdf ν) a := by
   intro hc
   rw [IsLocalMin, IsMinFilter, Filter.Eventually, Metric.nhds_basis_ball.mem_iff] at hc
   obtain ⟨r,hr⟩ := hc
@@ -334,7 +359,7 @@ lemma studentTMin (a ν : ℝ) (hν : 0 < ν) : ¬ IsLocalMin (studentTDistribut
     · linarith [@studentTIncreasing (a - r/2) a ν hν (by constructor <;> linarith)]
 
 
-  lemma studentTMode (x ν : ℝ) (hν : 0 ≤ ν) : studentTDistribution ν x ≤ studentTDistribution ν 0 := by
+  lemma studentTMode (x ν : ℝ) (hν : 0 ≤ ν) : t_pdf ν x ≤ t_pdf ν 0 := by
     refine mul_le_mul ?_ ?_ ?_ ?_
     · simp
     · apply rpow_le_rpow_of_exponent_nonpos
@@ -347,7 +372,7 @@ lemma studentTMin (a ν : ℝ) (hν : 0 < ν) : ¬ IsLocalMin (studentTDistribut
     · apply div_nonneg <;> positivity
 
 lemma studentTMax (ν : ℝ) (hν : 0 ≤ ν) :
-  IsLocalMax (studentTDistribution ν) 0 := by
+  IsLocalMax (t_pdf ν) 0 := by
   rw [IsLocalMax, IsMaxFilter]
   refine eventually_nhds_iff.mpr ?_
   use Set.univ
@@ -668,15 +693,17 @@ lemma claimFromBook {s₁ s₂ n ν₁ ν₂ : ℝ}
 
 -- χ²
 
-noncomputable def cχ (k : ℝ) := (1 / (2 ^ (k / 2) * Gamma (k / 2)))
+noncomputable def cχ (k : ℝ) := ((2 ^ (k / 2) * Gamma (k / 2)))⁻¹
 
-noncomputable def distχ (k : ℝ) : ℝ → ℝ := fun x =>
+/-- The probability density function of the χ² distribution with
+`k` degrees of freedom. -/
+noncomputable def χ2pdf (k : ℝ) : ℝ → ℝ := fun x =>
   cχ k * (x ^ (k / 2 - 1) * exp (- x / 2))
 
 /-- A "junk theorem" about the χ² distribution with 0,
 or more generally any integer of the form -2k, degrees of freedom. -/
-example (x : ℝ) (k : ℕ) : distχ (- 2 * k) x = 0 := by
-unfold distχ cχ
+example (x : ℝ) (k : ℕ) : χ2pdf (- 2 * k) x = 0 := by
+unfold χ2pdf cχ
 simp
 left
 left
@@ -686,11 +713,16 @@ show @Eq ℝ (-(2 * ↑k) / 2) (-↑k)
 suffices @Eq ℝ ((2 * ↑k) / 2) (↑k) by linarith
 simp
 
-/-- The χ² distribution with 2 degrees of freedom is just
- an exponential distribution. -/
-example (x : ℝ) : distχ 2 x = 2⁻¹ * exp (-x / 2) := by
-  unfold distχ cχ
-  simp
+/-- The exponential distribution with parameter `λ` (written `μ`).
+We do not enforce `x≥0` here.
+-/
+noncomputable def exponential_pdf (μ : ℝ) : ℝ → ℝ := fun x => μ * rexp (- μ * x)
+
+/-- The χ² distribution with 2 degrees of freedom is
+the exponential distribution with parameter `λ = 2⁻¹`. -/
+lemma χ2_exponential (x : ℝ) : χ2pdf 2 x = exponential_pdf (2⁻¹) x := by
+  simp [χ2pdf, cχ, exponential_pdf]
+  ring_nf
 
 lemma auxχ (k x : ℝ) (hx : x ≠ 0) :
   DifferentiableAt ℝ (fun x ↦ x ^ (k / 2 - 1) * rexp (-x / 2)) x := by
@@ -705,9 +737,9 @@ lemma auxχ (k x : ℝ) (hx : x ≠ 0) :
     apply Differentiable.const_mul (by simp)
 
 /-- A formula for the derivative of the χ² pdf. -/
-theorem deriv_χ (k x : ℝ) (hx : x ≠ 0) : deriv (distχ k) x =
+theorem deriv_χ (k x : ℝ) (hx : x ≠ 0) : deriv (χ2pdf k) x =
   cχ k * rexp (-x/2) * (x ^ (k / 2 - 2)) * ((k / 2 - 1) - 2⁻¹ * x) := by
-  unfold distχ
+  unfold χ2pdf
   rw [deriv_const_mul]
   nth_rw 2 [mul_assoc]
   nth_rw 1 [mul_assoc]
@@ -765,21 +797,22 @@ example : cχ 0 = 0 := by simp [cχ]
 
 /-- The multiplicative constant in the χ² pdf is nonzero. -/
 lemma cχ_ne_zero (k : ℝ) (hk : 0 < k) : cχ k ≠ 0 := by
+  unfold cχ
+  apply inv_ne_zero
   apply mul_ne_zero
   simp
+  · refine (rpow_ne_zero ?_ ?_).mpr ?_
+    simp
+    simp
+    linarith
+    simp
   simp
-  constructor
   · refine Gamma_ne_zero ?_
     intro m
     intro hc
     have : 0 < k / 2 := by linarith
     revert this
     rw [hc]
-    simp
-  · refine (rpow_ne_zero ?_ ?_).mpr ?_
-    simp
-    simp
-    linarith
     simp
 
 lemma need₄ (x k : ℝ) (hk : k ≠ 4) (hx : 0 < x)
@@ -793,9 +826,7 @@ lemma need₄ (x k : ℝ) (hk : k ≠ 4) (hx : 0 < x)
     linarith
 
 /-- The only critical point of a χ²(k) pdf is `k-2`. -/
-theorem deriv_χ_zero (x k : ℝ)
-  (hk₀ : 0 < k)
-  (hx : 0 < x) (h : deriv (distχ k) x = 0) :
+theorem deriv_χ_zero {x k : ℝ} (hk₀ : 0 < k) (hx : 0 < x) (h : deriv (χ2pdf k) x = 0) :
   x = k - 2 := by
   rw [deriv_χ] at h
   have : cχ k ≠ 0 := by apply cχ_ne_zero;linarith
@@ -836,7 +867,7 @@ theorem deriv_χ_zero (x k : ℝ)
 /-- The χ² distribution with `0 < k ≤ 2` df has no critical point. -/
 theorem no_deriv_χ_zero (x k : ℝ)
   (hk₀ : 0 < k)
-  (hx : 0 < x) (h₀: k ≤ 2) : deriv (distχ k) x ≠ 0 := by
+  (hx : 0 < x) (h₀: k ≤ 2) : deriv (χ2pdf k) x ≠ 0 := by
   intro hc
   have := @deriv_χ_zero _ _ hk₀ hx hc
   linarith
@@ -860,7 +891,8 @@ lemma eventually_of_punctured {a b : ℝ} (hb : a ≠ b) {P : ℝ → Prop} (h�
         · simp
         · simp;contrapose! hb;linarith
 
-theorem second_deriv_χ (a k : ℝ) (ha : a ≠ 0) : deriv (deriv (distχ k)) a =
+/-- The second derivative of the χ² pdf. -/
+theorem second_deriv_χ (a k : ℝ) (ha : a ≠ 0) : deriv (deriv (χ2pdf k)) a =
   cχ k * rexp (-a/2) * (a ^ (k / 2 - 3)) * 4⁻¹ *
     ((k - 4 - a) * (k - 2 - a) - 2 * a) := by
   rw [Filter.EventuallyEq.deriv_eq (eventually_of_punctured ha (deriv_χ k))] -- whoa...
@@ -1014,7 +1046,7 @@ theorem second_deriv_χ (a k : ℝ) (ha : a ≠ 0) : deriv (deriv (distχ k)) a 
 If k>2 then the solutions are real.
 -/
 theorem deriv_χ_inflexia (a k : ℝ) (hk : 2 < k)
-  (h : ((k - 4 - a) * (k - 2 - a) - 2 * a) = 0) :  0 = 0 := by
+  (h : ((k - 4 - a) * (k - 2 - a) - 2 * a) = 0) :  a = k - 4 ∨ a = (k - 2) / 3 := by
     have : ( k - a - 3)^2 = 2 * a + 1 := by
       linarith
     have : ( a - (k - 2))^2 = 2 * (k - 2) := by linarith
@@ -1482,10 +1514,10 @@ namely the first and second coin tosses.
 
 --     sorry
 
-example : Unit := by
-    have := @MeasureTheory.condExp (Fin 2 → Bool) (Fin 2 → Bool)
-        MeasurableSpace.pi (σ 0) (by sorry)
-    sorry
+-- example : Unit := by
+--     have := @MeasureTheory.condExp (Fin 2 → Bool) (Fin 2 → Bool)
+--         MeasurableSpace.pi (σ 0) (by sorry)
+--     sorry
 
 example : ProbabilityTheory.IndepFun (fun (v : Fin 2 → Bool) => v 0)
   (fun (v : Fin 2 → Bool) => v 1) μ' := by
