@@ -78,5 +78,5 @@ def Die (n s : Nat) : IO Int := do
     IO.println s!"Average gain over {n} trials = {avgGain}"
     return avgGain
 
-/-- Example run: 20 trials of a 6-sided die. -/
+/- Example run: 20 trials of a 6-sided die. -/
 #eval! Die 20 6
