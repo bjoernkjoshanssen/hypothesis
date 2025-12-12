@@ -1,0 +1,57 @@
+import Lean
+import Init.System.IO
+
+open IO
+
+/-- Computes the probability that all people in a group have different birthdays -/
+def birthdayProbability (groupSize : Nat) : Float :=
+  let rec loop (k : Nat) (prob : Float) (remaining : Nat) : Float :=
+    if remaining = 0 then prob
+    else 
+      if k = 0 then prob  -- safety check
+      else loop (k - 1) ((k.toFloat / 365.0) * prob) (remaining - 1)
+  termination_by remaining
+  loop 365 1.0 groupSize
+
+/-- Parse space or comma-separated numbers -/
+def parseNumbers (s : String) : List (Option Nat) :=
+  let cleaned := s.replace "," " "
+  let parts := cleaned.splitOn " " |>.filter (· ≠ "")
+  parts.map String.toNat?
+
+/-- Main program to compute birthday probabilities for a range of group sizes -/
+def main : IO Unit := do
+  -- Get input from user
+  IO.print "Minimum, maximum size of group, increment = "
+  let input ← (← IO.getStdin).getLine
+  
+  match parseNumbers input.trim with
+  | [some minimum, some maximum, some increment] =>
+    if increment = 0 then
+      IO.println "Error: increment must be non-zero"
+      return ()
+    
+    -- Print header
+    IO.println "Number of people    Probability that all birthdays are different"
+    IO.println ""
+    
+    -- Compute and print probabilities using a simpler tail-recursive approach
+    let rec printResults (size : Nat) (stepsRemaining : Nat) : IO Unit := do
+      if size > maximum then
+        return ()
+      else if stepsRemaining = 0 then
+        return ()  -- safety check to ensure termination
+      else
+        let prob := birthdayProbability size
+        IO.println s!"{size}\t\t\t{prob}"
+        printResults (size + increment) (stepsRemaining - 1)
+    termination_by stepsRemaining
+    
+    -- Calculate maximum number of steps needed
+    let maxSteps := (maximum - minimum) / increment + 2
+    printResults minimum maxSteps
+    
+  | _ =>
+    IO.println "Error: Please enter three numbers separated by commas or spaces"
+
+#eval main
