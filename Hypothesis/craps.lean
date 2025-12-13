@@ -16,10 +16,13 @@ def lcgNext (s : UInt64) : UInt64 :=
   s * 6364136223846793005 + 1
 
 /-- Produce one die roll (1..6) and advance RNG state. -/
-def randDie (s : UInt64) : UInt64 × Nat :=
+partial def randDie (s : UInt64) : UInt64 × Nat :=
   let s' := lcgNext s
-  let v := (s'.toNat % 6) + 1
-  (s', v)
+  let x := (s' >>> 61).toNat
+  if x < 6 then
+    (s', x + 1)
+  else
+    randDie s'
 
 /-- Roll two dice, returning the new state and the two face values. -/
 def rollDice (s : UInt64) : UInt64 × Nat × Nat :=
