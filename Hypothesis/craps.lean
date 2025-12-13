@@ -80,9 +80,15 @@ def printStats (st : Stats) : IO Unit := do
 /-- main: constants for number of games and seed -/
 def main : IO Unit := do
   let numGames := 1000
-  let seed : UInt64 := 41
+
+  -- Generate a random UInt64 seed using IO
+  let seedNat ← IO.rand 0 (Nat.pow 2 63 - 1)
+  let seed : UInt64 := UInt64.ofNat seedNat
+
   IO.println s!"Running {numGames} games"
+
   let (_, stats) := simulateMany numGames seed
   printStats stats
+
 
 #eval main
