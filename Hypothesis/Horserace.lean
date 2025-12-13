@@ -35,4 +35,4 @@ def simulateRaces (n : Nat) : IO Unit := do
 
 -- Change the number here to run more or fewer races
 
-#eval simulateRaces 10000
+#eval simulateRaces 100
