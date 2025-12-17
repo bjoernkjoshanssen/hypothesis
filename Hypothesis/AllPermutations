@@ -1,0 +1,36 @@
+/-
+Grinsted and Snell's Introduction to Probability
+Chapter 3.1
+AllPermutations Program
+-/
+
+
+-- Insert an element x into all positions in a list
+partial def insertAtAllPositions {α : Type} (x : α) : List α → List (List α)
+| []      => [[x]]
+| h :: t  =>
+    let front := (x :: h :: t)                  -- Insert at the front
+    let rest  := insertAtAllPositions x t       -- Insert into all positions of tail
+    let restWithH := rest.map (fun l => h :: l) -- Prepend h to each
+    front :: restWithH
+
+-- Generate all permutations of a list
+partial def allPermutations {α : Type} : List α → List (List α)
+| []      => [[]]
+| h :: t  =>
+    let tailPerms := allPermutations t
+    let rec aux (lst : List (List α)) : List (List α) :=
+        match lst with
+        | []      => []
+        | p :: ps => insertAtAllPositions h p ++ aux ps
+    aux tailPerms
+
+-- Example usage: permutations of [1,2,3]
+def perms := allPermutations [1,2,3]
+
+-- Print all permutations
+#eval IO.println s!"All permutations of [1,2,3]: {perms}"
+
+-- Print the number of permutations
+#eval IO.println s!"Number of permutations: {perms.length}"
+
