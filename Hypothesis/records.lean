@@ -40,3 +40,5 @@ def Records (num n : Nat) : IO Float := do
     let perm ← randomPermutation n
     total := total + countRecords perm
   pure (Float.ofNat total / Float.ofNat num)
+
+#eval Records 100 7 -- 100 choices of a permutation of 7 items
