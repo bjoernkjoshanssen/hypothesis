@@ -24,8 +24,8 @@ description: by Bjørn Kjos-Hanssen
 baseurl: "" # the subpath of your site, e.g. /blog
 url: "https://bjoernkjoshanssen.github.io/hypothesis" # the base hostname & protocol for your site, e.g. http://example.com
 twitter_username:
-github_username: 
-repository: /
+github_username: bjoernkjoshanssen
+repository: bjoernkjoshanssen/hypothesis
 
 # Build settings
 remote_theme: pages-themes/cayman@v0.2.0 
