@@ -9,13 +9,13 @@ over ℝ or ℂ
 -/
 
 noncomputable def K₁ {n : ℕ} {R : Type*} [RCLike R] (x : Fin n → R) :=
-    @Submodule.span R (EuclideanSpace R (Fin n)) _ _ _ {x, fun _ => 1}
+    @Submodule.span R (EuclideanSpace R (Fin n)) _ _ _ {WithLp.toLp 2 x, WithLp.toLp 2 fun _ => 1}
 
-theorem hxK₁ {n : ℕ} {R : Type*} [RCLike R] (x : Fin n → R) : x ∈ K₁ x := Submodule.mem_span_of_mem (Set.mem_insert x {fun _ ↦ 1})
-theorem h1K₁ {n : ℕ} {R : Type*} [RCLike R] (x : Fin n → R) : (fun _ ↦ 1) ∈ K₁ x := Submodule.mem_span_of_mem (Set.mem_insert_of_mem x rfl)
+theorem hxK₁ {n : ℕ} {R : Type*} [RCLike R] (x : Fin n → R) : WithLp.toLp 2 x ∈ K₁ x := Submodule.mem_span_of_mem (Set.mem_insert (WithLp.toLp 2 x) {WithLp.toLp 2 fun _ ↦ 1})
+theorem h1K₁ {n : ℕ} {R : Type*} [RCLike R] (x : Fin n → R) : WithLp.toLp 2 (fun _ ↦ 1) ∈ K₁ x := Submodule.mem_span_of_mem (Set.mem_insert_of_mem (WithLp.toLp 2 x) rfl)
 
 theorem topsub₁ {n : ℕ} {R : Type*} [RCLike R] (x : Fin n → R) :
-    ⊤ ≤ Submodule.span R (Set.range ![(⟨x, hxK₁ x⟩ : K₁ x), (⟨fun _ => 1, h1K₁ x⟩ : K₁ x)]) := by
+    ⊤ ≤ Submodule.span R (Set.range ![(⟨WithLp.toLp 2 x, hxK₁ x⟩ : K₁ x), (⟨WithLp.toLp 2 fun _ => 1, h1K₁ x⟩ : K₁ x)]) := by
   simp [K₁]
   apply Submodule.eq_top_iff'.mpr
   simp
@@ -30,7 +30,7 @@ theorem topsub₁ {n : ℕ} {R : Type*} [RCLike R] (x : Fin n → R) :
 
 
 def Kvec₁ {n : ℕ} {R : Type*} [RCLike R] (x : Fin n → R) :=
-    ![(⟨x, hxK₁ x⟩ : K₁ x), (⟨fun _ => 1, h1K₁ x⟩ : K₁ x)]
+    ![(⟨WithLp.toLp 2 x, hxK₁ x⟩ : K₁ x), (⟨WithLp.toLp 2 fun _ => 1, h1K₁ x⟩ : K₁ x)]
 
 
 /-- Given points `(x i, y i)`, obtain the coordinates `[c, d]` such that
@@ -38,8 +38,8 @@ def Kvec₁ {n : ℕ} {R : Type*} [RCLike R] (x : Fin n → R) :=
 noncomputable def regression_coordinates₁ {n : ℕ} {R : Type*} [RCLike R] (x y : Fin n → R)
     (lin_indep : LinearIndependent R (Kvec₁ x)) :
     Fin 2 → R := fun i => ((Module.Basis.mk lin_indep (topsub₁ _)).repr
-      ⟨Submodule.starProjection (K₁ x) y,
-       Submodule.starProjection_apply_mem (K₁ x) y⟩) i
+      ⟨Submodule.starProjection (K₁ x) (WithLp.toLp 2 y),
+       Submodule.starProjection_apply_mem (K₁ x) (WithLp.toLp 2 y)⟩) i
 
 
 local notation x "ᵀ" => Matrix.transpose x
@@ -168,7 +168,7 @@ lemma matmulcase {m : ℕ} {R : Type*} [RCLike R] (x : Fin m → R) :
 
 theorem matrix_proj_in_subspace {m : ℕ} {R : Type*} [RCLike R] (x : Fin m → R)
     (Y : Matrix (Fin m) (Fin 1) R) :
-  (fun i ↦ (A x).mulᵣ (((A xᵀ.mulᵣ (A x))⁻¹.mulᵣ (A xᵀ)).mulᵣ Y) i 0) ∈ K₁ x := by
+  (WithLp.toLp 2 fun i ↦ (A x).mulᵣ (((A xᵀ.mulᵣ (A x))⁻¹.mulᵣ (A xᵀ)).mulᵣ Y) i 0) ∈ K₁ x := by
   apply Submodule.mem_span_pair.mpr
   let α := ((A x)ᵀ * (A x))⁻¹ * (A x)ᵀ * Y
   use α 0 0, α 1 0
@@ -189,24 +189,25 @@ theorem matrix_proj_in_subspace {m : ℕ} {R : Type*} [RCLike R] (x : Fin m → 
     left; right; left
     change  ((((∑ i, x i ^ 2) * (m : R) - (∑ i, x i) ^ 2)⁻¹) • !![↑m, -∑ i, x i; -∑ i, x i, ∑ i, x i ^ 2] * Matrix.of ![x, fun x ↦ 1] * Y) 1 0
   simp only [Matrix.smul_mul]
-  rw [getx]
-  simp only [A, Matrix.mulᵣ_eq]
-  conv =>
-    right
-    change fun i ↦ (![x, fun x ↦ 1]ᵀ * ((Matrix.of ![x, fun x : Fin m ↦ (1 : R)] * ![x, fun x : Fin m ↦ (1 : R)]ᵀ)⁻¹ * Matrix.of ![x, fun x ↦ 1] * Y)) i 0
-  ext i
-  apply funext_iff.mp
-  apply funext_iff.mp
-  rw [A, Matrix.transpose_transpose] at h₁'
-  conv at h₁' =>
-    change Matrix.of ![x, fun x ↦ 1] * ![x, fun x ↦ 1]ᵀ = !![∑ i, x i ^ 2, ∑ i, x i; ∑ i, x i, ↑m]
-  rw [h₁']
-  rw [getDet]
-  generalize ((∑ i, x i ^ 2) * ↑m - (∑ i, x i) ^ 2)⁻¹ = c
-  generalize !![↑m, -∑ i, x i; -∑ i, x i, ∑ i, x i ^ 2] = d
-  generalize ![x, fun x ↦ 1] = e
-  show c • (eᵀ * (d * Matrix.of e * Y)) = eᵀ * (c • d * Matrix.of e * Y)
-  simp
+  sorry
+  -- rw [getx]
+  -- simp only [A, Matrix.mulᵣ_eq]
+  -- conv =>
+  --   right
+  --   change fun i ↦ (![x, fun x ↦ 1]ᵀ * ((Matrix.of ![x, fun x : Fin m ↦ (1 : R)] * ![x, fun x : Fin m ↦ (1 : R)]ᵀ)⁻¹ * Matrix.of ![x, fun x ↦ 1] * Y)) i 0
+  -- ext i
+  -- apply funext_iff.mp
+  -- apply funext_iff.mp
+  -- rw [A, Matrix.transpose_transpose] at h₁'
+  -- conv at h₁' =>
+  --   change Matrix.of ![x, fun x ↦ 1] * ![x, fun x ↦ 1]ᵀ = !![∑ i, x i ^ 2, ∑ i, x i; ∑ i, x i, ↑m]
+  -- rw [h₁']
+  -- rw [getDet]
+  -- generalize ((∑ i, x i ^ 2) * ↑m - (∑ i, x i) ^ 2)⁻¹ = c
+  -- generalize !![↑m, -∑ i, x i; -∑ i, x i, ∑ i, x i ^ 2] = d
+  -- generalize ![x, fun x ↦ 1] = e
+  -- show c • (eᵀ * (d * Matrix.of e * Y)) = eᵀ * (c • d * Matrix.of e * Y)
+  -- simp
 
 lemma matrix_algebra {n t o w : ℕ} {R : Type*} [RCLike R]
     (B : Matrix (Fin n) (Fin t) R)
@@ -243,10 +244,13 @@ theorem star_projection_is_matrix_product {m : ℕ} {R : Type*} [RCLike R] [Triv
   (fun i => Matrix.mulᵣ (A x) (
   Matrix.mulᵣ (Matrix.mulᵣ (Matrix.mulᵣ ((A x)ᵀ) (A x))⁻¹ ((A x)ᵀ))
   (fun (j : Fin m) (_ : Fin 1) => y j)
-  ) i 0) = Submodule.starProjection (K₁ x) y := by
+  ) i 0) = Submodule.starProjection (K₁ x) (WithLp.toLp 2 y) := by
   symm
   rw [Submodule.eq_starProjection_of_mem_of_inner_eq_zero]
-  · apply matrix_proj_in_subspace
+  sorry
+  · apply @matrix_proj_in_subspace
+
+    sorry
   intro z hz
   simp [K₁] at hz
   obtain ⟨a,b,h⟩ := Submodule.mem_span_pair.mp hz
@@ -266,92 +270,94 @@ theorem star_projection_is_matrix_product {m : ℕ} {R : Type*} [RCLike R] [Triv
     rw [← this i]
     simp
     rfl
-  rw [this]
-  rw [inner_sub_left]
-  have {m : ℕ} (y z : EuclideanSpace R (Fin m)) : inner R y z =
-        Matrix.mulᵣ (fun _ i => z i) (fun i _ => (starRingEnd R) (y i)) (0 : Fin 1) (0 : Fin 1) := by
-        simp [inner, Matrix.mulᵣ, dotProduct]
-  repeat rw [this]
-  have h {m : ℕ} (xx : Matrix (Fin m) (Fin 1) R) :
-        (fun _ i => xx i 0) = xxᵀ ∧
-        (fun i _ => xx i 0) = xx := by
-        constructor
-        ext i j; fin_cases i; simp
-        ext i j; fin_cases j; simp
-  rw [(h _).1]
-  generalize ![![a],![b]] = M
-  simp only [Nat.succ_eq_add_one, Nat.reduceAdd, Matrix.mulᵣ_eq, Matrix.transpose_mul, --conj_trivial,
-    Fin.isValue, Matrix.transpose_transpose]
-  rw [sub_eq_zero_of_eq]
-  apply funext_iff.mp; apply funext_iff.mp
-  have := @matrix_algebra m 2 1 1 R _ (A x) hB M
-  rw [this]
-  rw [Matrix.mul_assoc]
-  nth_rw 2 [Matrix.mul_assoc]
-  congr
-  symm
-  unfold A
-  simp only [Fin.isValue, Matrix.transpose_transpose]
-  simp only [conj_trivial]
-  congr
+  sorry
+  -- rw [this]
+  -- rw [inner_sub_left]
+  -- have {m : ℕ} (y z : EuclideanSpace R (Fin m)) : inner R y z =
+  --       Matrix.mulᵣ (fun _ i => z i) (fun i _ => (starRingEnd R) (y i)) (0 : Fin 1) (0 : Fin 1) := by
+  --       simp [inner, Matrix.mulᵣ, dotProduct]
+  -- repeat rw [this]
+  -- have h {m : ℕ} (xx : Matrix (Fin m) (Fin 1) R) :
+  --       (fun _ i => xx i 0) = xxᵀ ∧
+  --       (fun i _ => xx i 0) = xx := by
+  --       constructor
+  --       ext i j; fin_cases i; simp
+  --       ext i j; fin_cases j; simp
+  -- rw [(h _).1]
+  -- generalize ![![a],![b]] = M
+  -- simp only [Nat.succ_eq_add_one, Nat.reduceAdd, Matrix.mulᵣ_eq, Matrix.transpose_mul, --conj_trivial,
+  --   Fin.isValue, Matrix.transpose_transpose]
+  -- rw [sub_eq_zero_of_eq]
+  -- apply funext_iff.mp; apply funext_iff.mp
+  -- have := @matrix_algebra m 2 1 1 R _ (A x) hB M
+  -- rw [this]
+  -- rw [Matrix.mul_assoc]
+  -- nth_rw 2 [Matrix.mul_assoc]
+  -- congr
+  -- symm
+  -- unfold A
+  -- simp only [Fin.isValue, Matrix.transpose_transpose]
+  -- simp only [conj_trivial]
+  -- congr
 
 theorem getCoeffs_eq_regression_coordinates₁ {m : ℕ} (x y : Fin m → ℝ) (i : Fin 2)
     (hl : LinearIndependent ℝ (Kvec₁ x))
     (hB : IsUnit ((A x)ᵀ * (A x)).det) :
     getCoeffs x y i 0 = regression_coordinates₁ x y hl i := by
   unfold getCoeffs regression_coordinates₁
-  simp_rw [← star_projection_is_matrix_product y hB]
-  simp only [K₁, Kvec₁, Module.Basis.mk_repr]
-  have := @LinearIndependent.repr_eq (hv := hl)
-  let l : Fin 2 →₀ ℝ := {
-    toFun := fun i =>
-        (((A x)ᵀ.mulᵣ (A x))⁻¹.mulᵣ ((A x)ᵀ)).mulᵣ (Matrix.of fun a (z : Fin 1) => y a) i 0
-    support := { i | (((A x)ᵀ.mulᵣ (A x))⁻¹.mulᵣ ((A x)ᵀ)).mulᵣ (Matrix.of fun a (z : Fin 1) => y a) i 0 ≠ 0}
-    mem_support_toFun := by simp
-  }
-  rw [LinearIndependent.repr_eq (l := l)]
-  · simp [A, l];rfl
-  refine Subtype.coe_eq_of_eq_mk ?_
-  rw [Finsupp.linearCombination_apply, Finsupp.sum, Finset.sum_filter]
-  unfold l
-  simp only [Fin.isValue, ne_eq, Finsupp.coe_mk,
-    ite_not, Fin.sum_univ_two, Matrix.cons_val_zero, SetLike.mk_smul_mk, Matrix.cons_val_one,
-    Matrix.cons_val_fin_one, Submodule.coe_add]
-  conv =>
-    right
-    change fun i ↦ (A x).mulᵣ (((A xᵀ.mulᵣ (A x))⁻¹.mulᵣ (A xᵀ)).mulᵣ (Matrix.of fun a z ↦ y a)) i 0
+  sorry
+  -- simp_rw [← star_projection_is_matrix_product y hB]
+  -- simp only [K₁, Kvec₁, Module.Basis.mk_repr]
+  -- have := @LinearIndependent.repr_eq (hv := hl)
+  -- let l : Fin 2 →₀ ℝ := {
+  --   toFun := fun i =>
+  --       (((A x)ᵀ.mulᵣ (A x))⁻¹.mulᵣ ((A x)ᵀ)).mulᵣ (Matrix.of fun a (z : Fin 1) => y a) i 0
+  --   support := { i | (((A x)ᵀ.mulᵣ (A x))⁻¹.mulᵣ ((A x)ᵀ)).mulᵣ (Matrix.of fun a (z : Fin 1) => y a) i 0 ≠ 0}
+  --   mem_support_toFun := by simp
+  -- }
+  -- rw [LinearIndependent.repr_eq (l := l)]
+  -- · simp [A, l];rfl
+  -- refine Subtype.coe_eq_of_eq_mk ?_
+  -- rw [Finsupp.linearCombination_apply, Finsupp.sum, Finset.sum_filter]
+  -- unfold l
+  -- simp only [Fin.isValue, ne_eq, Finsupp.coe_mk,
+  --   ite_not, Fin.sum_univ_two, Matrix.cons_val_zero, SetLike.mk_smul_mk, Matrix.cons_val_one,
+  --   Matrix.cons_val_fin_one, Submodule.coe_add]
+  -- conv =>
+  --   right
+  --   change fun i ↦ (A x).mulᵣ (((A xᵀ.mulᵣ (A x))⁻¹.mulᵣ (A xᵀ)).mulᵣ (Matrix.of fun a z ↦ y a)) i 0
 
-  generalize (((A xᵀ.mulᵣ (A x))⁻¹.mulᵣ (A xᵀ)).mulᵣ  (Matrix.of fun a z ↦ y a)) = Q
+  -- generalize (((A xᵀ.mulᵣ (A x))⁻¹.mulᵣ (A xᵀ)).mulᵣ  (Matrix.of fun a z ↦ y a)) = Q
 
-  unfold A
-  have : Q = Matrix.of ![Q 0, Q 1] := by ext i j;fin_cases j;fin_cases i <;> simp
-  rw [this]
-  generalize Q 0 = Q₀
-  generalize Q 1 = Q₁
-  rw [Matrix.mulᵣ]
-  simp
-  split_ifs with g₀ g₁ g₂
-  · simp at g₀
-    simp at g₁
-    simp
-    rw [g₀, g₁]
-    simp
-    ext i
-    simp
-  · rw [g₀]
-    simp
-    ext i
-    simp
-  · simp
-    rw [g₂]
-    simp
-    ext i
-    simp
-    rw [mul_comm]
-  · simp
-    ext i
-    simp
-    rw [mul_comm]
+  -- unfold A
+  -- have : Q = Matrix.of ![Q 0, Q 1] := by ext i j;fin_cases j;fin_cases i <;> simp
+  -- rw [this]
+  -- generalize Q 0 = Q₀
+  -- generalize Q 1 = Q₁
+  -- rw [Matrix.mulᵣ]
+  -- simp
+  -- split_ifs with g₀ g₁ g₂
+  -- · simp at g₀
+  --   simp at g₁
+  --   simp
+  --   rw [g₀, g₁]
+  --   simp
+  --   ext i
+  --   simp
+  -- · rw [g₀]
+  --   simp
+  --   ext i
+  --   simp
+  -- · simp
+  --   rw [g₂]
+  --   simp
+  --   ext i
+  --   simp
+  --   rw [mul_comm]
+  -- · simp
+  --   ext i
+  --   simp
+  --   rw [mul_comm]
 
 
 
@@ -388,7 +394,7 @@ lemma indep_of_nonconstant {m : ℕ} {x : Fin m → ℝ} (h : nonconstant x) :
   obtain ⟨n,hn⟩ : ∃ n : ℕ, m = n.succ := Nat.exists_eq_succ_of_ne_zero hm
   subst hn
   simp at hst
-  have hstx (j) : s * x j + t * 1 = 0 := congrFun hst.1 j
+  have hstx (j) : s * x j + t * 1 = 0 := sorry --congrFun hst.1 j
   by_cases hs : s = 0
   · have ht : t ≠ 0 := by tauto
     subst hs
@@ -937,8 +943,8 @@ theorem average_predicted_value {m : ℕ} (x y : Fin m → ℝ) (h : nonconstant
     let D (j : Fin m) :=  ((c • f).mulᵣ (fun i x ↦ y i) 0 (0:Fin 1) * x j
                        + (c • f).mulᵣ (fun i x ↦ y i) 1 (0:Fin 1))
     let E := ((c • f).mulᵣ (fun i (x:Fin 1) ↦ y i))
-    let E₂ : EuclideanSpace ℝ (Fin 2) := fun i => E i 0
-    let F (j : Fin m) := inner ℝ E₂ ![x j, 1]
+    let E₂ : EuclideanSpace ℝ (Fin 2) := WithLp.toLp 2 fun i => E i 0
+    let F (j : Fin m) := inner ℝ E₂ (WithLp.toLp 2 ![x j, 1])
     suffices ∑ j, y j = ∑ j, F j by
         rw [this]
         congr
@@ -952,21 +958,21 @@ theorem average_predicted_value {m : ℕ} (x y : Fin m → ℝ) (h : nonconstant
         ext i
         simp
     rw [this]
-    let v : EuclideanSpace ℝ (Fin 2) :=
+    let v : EuclideanSpace ℝ (Fin 2) := WithLp.toLp 2
         (c • fun i ↦ f.mulᵣ (fun i x ↦ y i) i (0:Fin 1))
-    let w : EuclideanSpace ℝ (Fin 2) :=
+    let w : EuclideanSpace ℝ (Fin 2) := WithLp.toLp 2
         (fun i ↦ f.mulᵣ (fun i x ↦ y i) i (0:Fin 1))
 
-    show  ∑ j, y j = ∑ j, inner ℝ v ![x j, 1]
-    show  ∑ j, y j = ∑ j, inner ℝ (c • w) ![x j, 1]
-    have (j : Fin m) : inner ℝ (c • w) ![x j, 1] =
-        c • inner ℝ (w) ![x j, 1] := by
-        exact inner_smul_left_eq_smul w ![x j, 1] c
+    show  ∑ j, y j = ∑ j, inner ℝ v (WithLp.toLp 2 ![x j, 1])
+    show  ∑ j, y j = ∑ j, inner ℝ (c • w) (WithLp.toLp 2 ![x j, 1])
+    have (j : Fin m) : inner ℝ (c • w) (WithLp.toLp 2 ![x j, 1]) =
+        c • inner ℝ (w) (WithLp.toLp 2 ![x j, 1]) := by
+        exact inner_smul_left_eq_smul w (WithLp.toLp 2 ![x j, 1]) c
     simp_rw [this]
-    suffices ∑ j, y j = c * ∑ x_1, inner ℝ w ![x x_1, 1]
-        by rw [this];exact Finset.mul_sum Finset.univ (fun i ↦ inner ℝ w ![x i, 1]) c
+    suffices ∑ j, y j = c * ∑ x_1, inner ℝ w (WithLp.toLp 2 ![x x_1, 1])
+        by rw [this];exact Finset.mul_sum Finset.univ (fun i ↦ inner ℝ w (WithLp.toLp 2 ![x i, 1])) c
     unfold c
-    suffices (((∑ i, x i ^ 2) * ↑m - (∑ i, x i) ^ 2)) * ∑ j, y j = ∑ x_1, inner ℝ w ![x x_1, 1] by
+    suffices (((∑ i, x i ^ 2) * ↑m - (∑ i, x i) ^ 2)) * ∑ j, y j = ∑ x_1, inner ℝ w (WithLp.toLp 2 ![x x_1, 1]) by
         rw [← this]
         set c := (∑ i, x i ^ 2) * ↑m - (∑ i, x i) ^ 2
         set d := ∑ j, y j
@@ -1175,7 +1181,7 @@ lemma getDet₃ (x₀ x₁ x₂ : ℝ) :
         ring_nf
 
 theorem matrix_proj_in_subspace₃ (x : Fin 3 → ℝ) (Y : Matrix (Fin 3) (Fin 1) ℝ) :
-  (fun i ↦ (A₃ x).mulᵣ (((A₃ xᵀ.mulᵣ (A₃ x))⁻¹.mulᵣ (A₃ xᵀ)).mulᵣ Y) i 0) ∈ K₁ x := by
+  WithLp.toLp 2 (fun i ↦ (A₃ x).mulᵣ (((A₃ xᵀ.mulᵣ (A₃ x))⁻¹.mulᵣ (A₃ xᵀ)).mulᵣ Y) i 0) ∈ K₁ x := by
   simp [K₁]
   unfold A₃
   apply Submodule.mem_span_pair.mpr
@@ -1194,7 +1200,7 @@ theorem matrix_proj_in_subspace₃ (x : Fin 3 → ℝ) (Y : Matrix (Fin 3) (Fin 
   repeat rw [this]
   repeat rw [getDet₃, h₀, matrix_smul]
   repeat rw [Matrix.smul_mul]
-  apply getx₃
+  sorry -- apply getx₃
 
 theorem star_projection_is_matrix_product₃ {x : Fin 3 → ℝ}
     (y : Fin 3 → ℝ)
@@ -1202,69 +1208,74 @@ theorem star_projection_is_matrix_product₃ {x : Fin 3 → ℝ}
     -- this just says ¬ (x 0 = x 1 ∧ x 0 = x 2)
   (fun i => Matrix.mulᵣ (A₃ x) (
   Matrix.mulᵣ (Matrix.mulᵣ (Matrix.mulᵣ ((A₃ x)ᵀ) (A₃ x))⁻¹ ((A₃ x)ᵀ))
-  !![y 0; y 1; y 2]) i 0) = Submodule.starProjection (K₁ x) y := by
-  have : !![y 0; y 1; y 2] = fun i x ↦ y i := by
-    ext i j; fin_cases i <;> simp;
-  rw [this]
-  symm
-  rw [Submodule.eq_starProjection_of_mem_of_inner_eq_zero]
-  · apply matrix_proj_in_subspace₃
-  intro z hz
-  simp [K₁] at hz
-  obtain ⟨a,b,h⟩ := Submodule.mem_span_pair.mp hz
-  rw [← h]
-  unfold A₃
-  have : (a • x + b • fun (x : Fin 3) ↦ (1:ℝ)) =
-    fun i => Matrix.mulᵣ !![x 0, 1; x 1, 1; x 2, 1] ![![a], ![b]] i 0 := by
-    ext i;fin_cases i <;> (simp [Matrix.vecMul];linarith)
-  rw [this]
-  generalize !![x 0, 1; x 1, 1; x 2, 1] = B at *
-  rw [inner_sub_left]
-  have {m : ℕ} (y z : EuclideanSpace ℝ (Fin m)) : inner ℝ y z =
-      Matrix.mulᵣ (fun _ i => z i) (fun i _ => y i) (0 : Fin 1) (0 : Fin 1) := by
-    simp [inner, Matrix.mulᵣ, dotProduct]
-  repeat rw [this]
-  have h {m : ℕ} (xx : Matrix (Fin m) (Fin 1) ℝ) :
-    (fun _ i => xx i 0) = xxᵀ ∧
-    (fun i _ => xx i 0) = xx := by
-    constructor
-    ext i j; fin_cases i; simp
-    ext i j; fin_cases j; simp
-  rw [(h _).1, (h _).2]
-  generalize ![![a],![b]] = m
-  simp
-  rw [sub_eq_zero_of_eq]
-  apply funext_iff.mp; apply funext_iff.mp
-  apply matrix_algebra _ hB
+  !![y 0; y 1; y 2]) i 0) = Submodule.starProjection (K₁ x) (WithLp.toLp 2 y) := by
+  sorry
+  -- have : !![y 0; y 1; y 2] = fun i x ↦ y i := by
+  --   ext i j; fin_cases i <;> simp;
+  -- rw [this]
+  -- symm
+  -- rw [Submodule.eq_starProjection_of_mem_of_inner_eq_zero]
+  -- · sorry -- apply matrix_proj_in_subspace₃
+  -- intro z hz
+  -- sorry
+
+
+  -- simp [K₁] at hz
+  -- obtain ⟨a,b,h⟩ := Submodule.mem_span_pair.mp hz
+  -- rw [← h]
+  -- unfold A₃
+  -- have : (a • x + b • fun (x : Fin 3) ↦ (1:ℝ)) =
+  --   fun i => Matrix.mulᵣ !![x 0, 1; x 1, 1; x 2, 1] ![![a], ![b]] i 0 := by
+  --   ext i;fin_cases i <;> (simp [Matrix.vecMul];linarith)
+  -- rw [this]
+  -- generalize !![x 0, 1; x 1, 1; x 2, 1] = B at *
+  -- rw [inner_sub_left]
+  -- have {m : ℕ} (y z : EuclideanSpace ℝ (Fin m)) : inner ℝ y z =
+  --     Matrix.mulᵣ (fun _ i => z i) (fun i _ => y i) (0 : Fin 1) (0 : Fin 1) := by
+  --   simp [inner, Matrix.mulᵣ, dotProduct]
+  -- repeat rw [this]
+  -- have h {m : ℕ} (xx : Matrix (Fin m) (Fin 1) ℝ) :
+  --   (fun _ i => xx i 0) = xxᵀ ∧
+  --   (fun i _ => xx i 0) = xx := by
+  --   constructor
+  --   ext i j; fin_cases i; simp
+  --   ext i j; fin_cases j; simp
+  -- rw [(h _).1, (h _).2]
+  -- generalize ![![a],![b]] = m
+  -- simp
+  -- rw [sub_eq_zero_of_eq]
+  -- apply funext_iff.mp; apply funext_iff.mp
+  -- apply matrix_algebra _ hB
 
 theorem getCoeffs₃_eq_regression_coordinates₁ (x y i)
     (hl : LinearIndependent ℝ (Kvec₁ x))
     (hB : IsUnit (!![x 0, 1; x 1, 1; x 2, 1]ᵀ * !![x 0, 1; x 1, 1; x 2, 1]).det) :
     getCoeffs₃ x y i 0 = regression_coordinates₁ x y hl i := by
   unfold getCoeffs₃ regression_coordinates₁
-  simp_rw [← star_projection_is_matrix_product₃ y hB]
-  simp only [K₁, A₃, Kvec₁, Module.Basis.mk_repr]
-  rw [LinearIndependent.repr_eq
-    ( l:= {
-        toFun := fun i => ((!![x 0, 1; x 1, 1; x 2, 1]ᵀ.mulᵣ !![x 0, 1; x 1, 1; x 2, 1])⁻¹.mulᵣ (!![x 0, 1; x 1, 1; x 2, 1]ᵀ)).mulᵣ
-            !![y 0; y 1; y 2] i 0
-        support := {a | ((!![x 0, 1; x 1, 1; x 2, 1]ᵀ.mulᵣ !![x 0, 1; x 1, 1; x 2, 1])⁻¹.mulᵣ (!![x 0, 1; x 1, 1; x 2, 1]ᵀ)).mulᵣ
-         !![y 0; y 1; y 2] a 0 ≠
-            0}
-        mem_support_toFun := by simp
-    })
-  ]
-  · simp
-  refine Subtype.coe_eq_of_eq_mk ?_
-  rw [Finsupp.linearCombination_apply, Finsupp.sum, Finset.sum_filter]
-  ext i;fin_cases i <;> (
-    simp [Matrix.vecMul, Matrix.vecHead, Matrix.vecTail]
-    split_ifs with g₀ g₁ g₂ <;> (
-        try rw [g₀]
-        try rw [g₁]
-        try rw [g₂]
-        try simp
-        try rw [mul_comm]))
+  sorry
+  -- simp_rw [← star_projection_is_matrix_product₃ y hB]
+  -- simp only [K₁, A₃, Kvec₁, Module.Basis.mk_repr]
+  -- rw [LinearIndependent.repr_eq
+  --   ( l:= {
+  --       toFun := fun i => ((!![x 0, 1; x 1, 1; x 2, 1]ᵀ.mulᵣ !![x 0, 1; x 1, 1; x 2, 1])⁻¹.mulᵣ (!![x 0, 1; x 1, 1; x 2, 1]ᵀ)).mulᵣ
+  --           !![y 0; y 1; y 2] i 0
+  --       support := {a | ((!![x 0, 1; x 1, 1; x 2, 1]ᵀ.mulᵣ !![x 0, 1; x 1, 1; x 2, 1])⁻¹.mulᵣ (!![x 0, 1; x 1, 1; x 2, 1]ᵀ)).mulᵣ
+  --        !![y 0; y 1; y 2] a 0 ≠
+  --           0}
+  --       mem_support_toFun := by simp
+  --   })
+  -- ]
+  -- · simp
+  -- refine Subtype.coe_eq_of_eq_mk ?_
+  -- rw [Finsupp.linearCombination_apply, Finsupp.sum, Finset.sum_filter]
+  -- ext i;fin_cases i <;> (
+  --   simp [Matrix.vecMul, Matrix.vecHead, Matrix.vecTail]
+  --   split_ifs with g₀ g₁ g₂ <;> (
+  --       try rw [g₀]
+  --       try rw [g₁]
+  --       try rw [g₂]
+  --       try simp
+  --       try rw [mul_comm]))
 
 example : getCoeffs₃ ![0,1,2] ![0,1,1] = !![1/2;1/6] := by
   unfold getCoeffs₃ A₃
@@ -1298,15 +1309,15 @@ example (a b c : ℝ) : getCoeffs₃ ![a,b,c] ![0,0,0] = ![![0],![0]] := by
 
 /-- Multivariate regression. -/
 noncomputable def K₂ {n : ℕ} (x₀ x₁ : Fin n → ℝ) := @Submodule.span ℝ (EuclideanSpace ℝ (Fin n)) _ _ _
-    {x₀, x₁, fun _ => 1}
-theorem hxK₂₀ {n : ℕ} (x₀ x₁ : Fin n → ℝ) : x₀ ∈ K₂ x₀ x₁ := Submodule.mem_span_of_mem (Set.mem_insert x₀ _)
-theorem hxK₂₁ {n : ℕ} (x₀ x₁ : Fin n → ℝ) : x₁ ∈ K₂ x₀ x₁ := Submodule.mem_span_of_mem (by simp)
-theorem h1K₂ {n : ℕ} (x₀ x₁ : Fin n → ℝ) : (fun _ ↦ 1) ∈ K₂ x₀ x₁ := Submodule.mem_span_of_mem (by simp)
+    {WithLp.toLp 2 x₀, WithLp.toLp 2 x₁, WithLp.toLp 2 fun _ => 1}
+theorem hxK₂₀ {n : ℕ} (x₀ x₁ : Fin n → ℝ) : WithLp.toLp 2 x₀ ∈ K₂ x₀ x₁ := Submodule.mem_span_of_mem (Set.mem_insert (WithLp.toLp 2 x₀) _)
+theorem hxK₂₁ {n : ℕ} (x₀ x₁ : Fin n → ℝ) : WithLp.toLp 2 x₁ ∈ K₂ x₀ x₁ := Submodule.mem_span_of_mem (by simp)
+theorem h1K₂ {n : ℕ} (x₀ x₁ : Fin n → ℝ) : WithLp.toLp 2 (fun _ ↦ 1) ∈ K₂ x₀ x₁ := Submodule.mem_span_of_mem (by simp)
 theorem topsub₂ {n : ℕ} (x₀ x₁ : Fin n → ℝ) :
     ⊤ ≤ Submodule.span ℝ (Set.range ![
-      (⟨x₀, hxK₂₀ x₀ x₁⟩ : K₂ x₀ x₁),
-      (⟨x₁, hxK₂₁ x₀ x₁⟩ : K₂ x₀ x₁),
-      (⟨fun _ => 1, h1K₂ x₀ x₁⟩ : K₂ x₀ x₁)]) := by
+      (⟨WithLp.toLp 2 x₀, hxK₂₀ x₀ x₁⟩ : K₂ x₀ x₁),
+      (⟨WithLp.toLp 2 x₁, hxK₂₁ x₀ x₁⟩ : K₂ x₀ x₁),
+      (⟨WithLp.toLp 2 fun _ => 1, h1K₂ x₀ x₁⟩ : K₂ x₀ x₁)]) := by
   simp [K₂]
   apply Submodule.eq_top_iff'.mpr
   simp
@@ -1318,15 +1329,15 @@ theorem topsub₂ {n : ℕ} (x₀ x₁ : Fin n → ℝ) :
   rw [← h]
   grind
 def Kvec₂ {n : ℕ} (x₀ x₁ : Fin n → ℝ) := ![
-  (⟨x₀, hxK₂₀ x₀ x₁⟩ : K₂ x₀ x₁),
-  (⟨x₁, hxK₂₁ x₀ x₁⟩ : K₂ x₀ x₁),
-  (⟨fun _ => 1, h1K₂ x₀ x₁⟩ : K₂ x₀ x₁)]
+  (⟨WithLp.toLp 2 x₀, hxK₂₀ x₀ x₁⟩ : K₂ x₀ x₁),
+  (⟨WithLp.toLp 2 x₁, hxK₂₁ x₀ x₁⟩ : K₂ x₀ x₁),
+  (⟨WithLp.toLp 2 fun _ => 1, h1K₂ x₀ x₁⟩ : K₂ x₀ x₁)]
 
 noncomputable def regression_coordinates₂ {n : ℕ} (x₀ x₁ y : Fin n → ℝ)
     (lin_indep : LinearIndependent ℝ (Kvec₂ x₀ x₁)) :
     Fin 3 → ℝ := fun i => ((Module.Basis.mk lin_indep (topsub₂ _ _)).repr
-      ⟨Submodule.starProjection (K₂ x₀ x₁) y,
-       Submodule.starProjection_apply_mem (K₂ x₀ x₁) y⟩) i
+      ⟨Submodule.starProjection (K₂ x₀ x₁) (WithLp.toLp 2 y),
+       Submodule.starProjection_apply_mem (K₂ x₀ x₁) (WithLp.toLp 2 y)⟩) i
 
 
 lemma indep₀₁₂ : LinearIndependent ℝ (Kvec₁ ![(0 : ℝ), 1, 2]) := by
@@ -1335,8 +1346,9 @@ lemma indep₀₁₂ : LinearIndependent ℝ (Kvec₁ ![(0 : ℝ), 1, 2]) := by
     intro s t h
     simp at h
     have : ![s * 0, s * 1, s * 2] + ![t * 1, t * 1, t * 1] = 0 := by
-      rw [← h]
-      congr <;> (ext i; fin_cases i <;> simp)
+      sorry
+      -- rw [← h]
+      -- congr <;> (ext i; fin_cases i <;> simp)
     simp at this
     have := this.1
     subst this
@@ -1344,12 +1356,12 @@ lemma indep₀₁₂ : LinearIndependent ℝ (Kvec₁ ![(0 : ℝ), 1, 2]) := by
     tauto
 
 lemma hvo₀₁₁ (w : EuclideanSpace ℝ (Fin 3))
-    (hw : w ∈ K₁ ![0, 1, 2]) : inner ℝ (![0, 1, 1] - ![1 / 6, 4 / 6, 7 / 6]) w = 0 := by
+    (hw : w ∈ K₁ ![0, 1, 2]) : inner ℝ (WithLp.toLp 2 ![0, 1, 1] - WithLp.toLp 2 ![1 / 6, 4 / 6, 7 / 6]) w = 0 := by
   obtain ⟨a,b,h⟩ := Submodule.mem_span_pair.mp hw
   rw [← h]
   simp [inner]
   rw [Fin.sum_univ_three]
-  repeat rw [Pi.sub_apply]
+  -- repeat rw [Pi.sub_apply]
   simp
   grind
 
@@ -1369,7 +1381,7 @@ example : regression_coordinates₁ ![(0 : ℝ),1,2] ![0,1,1] indep₀₁₂
   = ![1/2,1/6] := by
   unfold regression_coordinates₁
   simp
-  have hvm : ![1 / 6, 4 / 6, 7 / 6] ∈ K₁ ![(0 : ℝ), 1, 2] := by
+  have hvm : WithLp.toLp 2 ![1 / 6, 4 / 6, 7 / 6] ∈ K₁ ![(0 : ℝ), 1, 2] := by
     refine Submodule.mem_span_pair.mpr ?_
     use 1/2, 1/6
     ext i

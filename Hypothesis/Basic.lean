@@ -96,7 +96,6 @@ lemma two_sided_p_val_eq_two_sided_p_val' (a : ℝ)
     rw [← this]
     congr
     ext x
-    simp
     constructor
     intro h
     · sorry
@@ -111,19 +110,23 @@ lemma two_sided_p_val_eq_two_sided_p_val' (a : ℝ)
         have :  |x - moment id 1 p|
           = x - moment id 1 p := by
             apply (@abs_eq_self ℝ _ _ _ (x - moment id 1 p)).mpr
+            simp at h₀
             linarith
         rw [this]
+        simp at h₀
         linarith
       · by_cases H : 0 ≤ x - moment id 1 p
         · have : |x - moment id 1 p| = x - moment id 1 p := by
                 apply (@abs_eq_self ℝ _ _ _ (x - moment id 1 p)).mpr
                 linarith
           rw [this]
+          simp at h₁
           linarith
         · have : |x - moment id 1 p| = - (x - moment id 1 p) := by
                 apply (@abs_eq_neg_self ℝ _ _ _ (x - moment id 1 p)).mpr
                 linarith
           rw [this]
+          simp at h₁
           linarith
   · sorry
   · sorry

@@ -124,8 +124,6 @@ lemma deriv_FdistributionNumerator (a d₁ d₂ x : ℝ)
     · sorry
     · sorry
     · sorry
-    · sorry
-    · sorry
     · intro hc
       have := mul_eq_zero.mp hc
       cases this with

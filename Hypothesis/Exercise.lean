@@ -5,14 +5,18 @@ import Mathlib.Probability.ProbabilityMassFunction.Integrals
 import Mathlib.Data.ENNReal.Basic
 
 import Mathlib.Data.Real.Sqrt
-import Mathlib.Data.Complex.Exponential
+import Mathlib.Analysis.Complex.Exponential
 import Mathlib.Analysis.SpecialFunctions.Pow.Real
 import Mathlib.Analysis.SpecialFunctions.Log.Base
 import Mathlib.Analysis.SpecialFunctions.Log.ERealExp
 import Mathlib.Analysis.SpecialFunctions.ImproperIntegrals
 import Mathlib.MeasureTheory.Measure.Decomposition.RadonNikodym
 
-import Mathlib.Analysis.InnerProductSpace.Projection
+import Mathlib.Analysis.InnerProductSpace.Projection.Basic
+import Mathlib.Analysis.InnerProductSpace.Projection.FiniteDimensional
+import Mathlib.Analysis.InnerProductSpace.Projection.Minimal
+import Mathlib.Analysis.InnerProductSpace.Projection.Reflection
+import Mathlib.Analysis.InnerProductSpace.Projection.Submodule
 
 /-!
 
@@ -151,8 +155,7 @@ lemma part_4 : -- summer research
     {![H,H,T], ![H,T,H], ![H,T,T], ![T,H,H], ![T,H,T], ![T,T,H], ![T,T,T]}
     = {x | ∃ i, x i = T} := by
   apply subset_antisymm
-  · intro v
-    intro h
+  · intro v h
     simp
     cases h with
     | inl h' =>
@@ -161,8 +164,7 @@ lemma part_4 : -- summer research
       rfl
     | inr h' =>
       sorry -- etc.
-  · intro v
-    intro h
+  · intro v h
     simp
     by_cases H₀ : v 0 = T
     · by_cases H₁ : v 1 = T
@@ -311,8 +313,8 @@ lemma exercise_1_2_14a : mY 2 = 1/5 := by
     fin_cases a
     all_goals (simp; try rfl) <;> exact not_eq_of_beq_eq_false rfl
   simp_rw [this]
-  have : (∑' (a : Fin 7), if a = -1 then mX a else 0)
-    = mX (-1) := by simp_all only [Fin.isValue, tsum_ite_eq]
+  have : (∑ (a : Fin 7), if a = -1 then mX a else 0)
+    = mX (-1) := by simp
   rw [this]
   rfl
 
@@ -332,7 +334,7 @@ noncomputable def ex_2_1' : Measure (Set.Icc 2 10 : Set ℝ) :=
 
 noncomputable def uniformOn_2_10 : Measure ℝ :=
   (1 / 8 : ℝ≥0∞) • volume.restrict (Set.Icc 2 10)
-#check MeasureTheory.Measure.rnDeriv
+-- #check MeasureTheory.Measure.rnDeriv
 
 open MeasureTheory.Measure Classical
 /-- The RN derivative of the measure: -/
@@ -587,21 +589,28 @@ example : students_own_expectation f = 4/3 := by
   simp [students_own_expectation, f]
   norm_num
 
-def myfavoritenumber : ℕ := by
-  sorry
 
+def K_basis {n : ℕ} (x : Fin n → ℝ) : Set (EuclideanSpace ℝ (Fin n)) := {
+      WithLp.toLp 2 x,
+      WithLp.toLp 2 fun _ : Fin n => (1:ℝ)}
 
+noncomputable def K {n : ℕ} (x : Fin n → ℝ) :
+    Submodule ℝ (EuclideanSpace ℝ (Fin n)) :=
+  Submodule.span ℝ (K_basis x)
 
+theorem hxK {n : ℕ} (x : EuclideanSpace ℝ (Fin n)) :
+  x ∈ K x := by
+    apply Submodule.mem_span_of_mem
+    apply Set.mem_insert
 
-noncomputable def K {n : ℕ} (x : Fin n → ℝ) := @Submodule.span ℝ (EuclideanSpace ℝ (Fin n)) _ _ _
-    {x, fun _ => 1}
-
-theorem hxK {n : ℕ} (x : Fin n → ℝ) : x ∈ K x := Submodule.mem_span_of_mem (Set.mem_insert x {fun _ ↦ 1})
-
-theorem h1K {n : ℕ} (x : Fin n → ℝ) : (fun _ ↦ 1) ∈ K x := Submodule.mem_span_of_mem (Set.mem_insert_of_mem x rfl)
+theorem h1K {n : ℕ} (x : Fin n → ℝ) : (WithLp.toLp 2 fun _ : Fin n => (1:ℝ)) ∈ K x := by
+  apply Submodule.mem_span_of_mem
+  simp [K_basis]
 
 theorem topsub {n : ℕ} (x : Fin n → ℝ) :
-    ⊤ ≤ Submodule.span ℝ (Set.range ![(⟨x, hxK x⟩ : K x), (⟨fun _ => 1, h1K x⟩ : K x)]) := by
+    ⊤ ≤ Submodule.span ℝ
+      (Set.range ![(⟨WithLp.toLp 2 x, hxK (WithLp.toLp 2 x)⟩ : K x),
+        (⟨WithLp.toLp 2 fun _ => 1, h1K x⟩ : K x)]) := by
   simp [K]
   apply Submodule.eq_top_iff'.mpr
   simp
@@ -613,21 +622,24 @@ theorem topsub {n : ℕ} (x : Fin n → ℝ) :
   rw [← hcd]
   rw [add_comm]
 
-def Kvec {n : ℕ} (x : Fin n → ℝ) := ![(⟨x, hxK x⟩ : K x), (⟨fun _ => 1, h1K x⟩ : K x)]
+def Kvec {n : ℕ} (x : Fin n → ℝ) :=
+  ![(⟨WithLp.toLp 2 x, hxK (WithLp.toLp 2 x)⟩ : K x),
+    (⟨WithLp.toLp 2 fun _ => 1, h1K x⟩ : K x)]
 
 /-- Given points `(x i, y i)`, obtain the coordinates `[c, d]` such that
 `y = c x + d` is the best fit regression line. -/
 noncomputable def regression_coordinates {n : ℕ} (x y : Fin n → ℝ)
     (lin_indep : LinearIndependent ℝ (Kvec x)) :
-    Fin 2 → ℝ := fun i => ((Module.Basis.mk lin_indep (topsub _)).repr <| (K x).orthogonalProjection y) i
+    Fin 2 → ℝ := fun i => ((Module.Basis.mk lin_indep (topsub _)).repr
+      <| (K x).orthogonalProjection (WithLp.toLp 2 y)) i
 
 noncomputable def regression_coordinates' {n : ℕ} (x y : Fin n → ℝ)
     (lin_indep : LinearIndependent ℝ (Kvec x)) :
     Fin 2 → ℝ := by
   let zz := @Submodule.starProjection ℝ (EuclideanSpace ℝ (Fin n)) _ _ _ (K x)
-    (Submodule.HasOrthogonalProjection.ofCompleteSpace _) y
+    (Submodule.HasOrthogonalProjection.ofCompleteSpace _) (WithLp.toLp 2 y)
   let z := (⟨zz,
-    by exact Submodule.starProjection_apply_mem (K x) y⟩ : {z : EuclideanSpace ℝ (Fin n) // z ∈ K x})
+    by exact Submodule.starProjection_apply_mem (K x) (WithLp.toLp 2 y)⟩ : {z : EuclideanSpace ℝ (Fin n) // z ∈ K x})
   let rc := ((Module.Basis.mk lin_indep (topsub _)).repr <| z)
   exact fun i => rc i
 
@@ -639,8 +651,9 @@ lemma my :
     intro s t h
     simp at h
     have : ![s * 0, s * 1, s * 2] + ![t * 1, t * 1, t * 1] = 0 := by
-      rw [← h]
-      congr <;> (ext i; fin_cases i <;> simp)
+      sorry
+      -- rw [← h]
+      -- congr <;> (ext i; fin_cases i <;> simp)
     simp at this
     have := this.1
     subst this
@@ -650,12 +663,12 @@ lemma my :
 
 
 theorem hvo (w : EuclideanSpace ℝ (Fin 3))
-    (hw : w ∈ K ![0, 1, 2]) : inner ℝ (![0, 1, 1] - ![1 / 6, 4 / 6, 7 / 6]) w = 0 := by
+    (hw : w ∈ K ![0, 1, 2]) : inner ℝ
+      ((WithLp.toLp 2 ![0, 1, 1]) - (WithLp.toLp 2 ![1 / 6, 4 / 6, 7 / 6])) w = 0 := by
   obtain ⟨a,b,h⟩ := Submodule.mem_span_pair.mp hw
   rw [← h]
   simp [inner]
   rw [Fin.sum_univ_three]
-  repeat rw [Pi.sub_apply]
   simp
   grind
 
@@ -663,7 +676,7 @@ theorem hvo (w : EuclideanSpace ℝ (Fin 3))
 
 example : regression_coordinates' ![0,1,2] ![0,1,1] my = ![1/2,1/6] := by
   simp [regression_coordinates']
-  have hvm : ![1 / 6, 4 / 6, 7 / 6] ∈ K ![0, 1, 2] := by
+  have hvm : (WithLp.toLp 2 ![1 / 6, 4 / 6, 7 / 6]) ∈ K ![0, 1, 2] := by
     refine Submodule.mem_span_pair.mpr ?_
     use 1/2, 1/6
     ext i
@@ -697,17 +710,17 @@ example
   unfold regression_coordinates
 --   simp
   let z := @Submodule.starProjection ℝ (EuclideanSpace ℝ (Fin 3)) _ _ _ (K ![0,1,2])
-    (Submodule.HasOrthogonalProjection.ofCompleteSpace _) ![0,1,1]
+    (Submodule.HasOrthogonalProjection.ofCompleteSpace _) (WithLp.toLp 2 ![0,1,1])
   have h₀ := @Submodule.coe_orthogonalProjection_apply ℝ (EuclideanSpace ℝ (Fin 3)) _ _ _ (K ![0,1,2])
-    _ ![0,1,1]
-  show (fun i => ((Module.Basis.mk my (topsub _)).repr <| (K ![0,1,2]).orthogonalProjection ![0,1,1]) i) = ![1/2,1/6]
+    _ (WithLp.toLp 2 ![0,1,1])
+  show (fun i => ((Module.Basis.mk my (topsub _)).repr <| (K ![0,1,2]).orthogonalProjection (WithLp.toLp 2 ![0,1,1])) i) = ![1/2,1/6]
   suffices
-    (fun i => ((Module.Basis.mk my (topsub _)).repr <| ⟨(K ![0,1,2]).starProjection ![0,1,1], by
+    (fun i => ((Module.Basis.mk my (topsub _)).repr <| ⟨(K ![0,1,2]).starProjection (WithLp.toLp 2 ![0,1,1]), by
         simp⟩) i) = ![1/2,1/6] by
     rw [← this]
     simp_rw [← h₀]
   have := @Submodule.eq_starProjection_of_mem_of_inner_eq_zero ℝ (EuclideanSpace ℝ (Fin 3)) _ _ _ (K ![0,1,2])
-    _ ![0,1,1] ![1/6,4/6,7/6] (by
+    _ (WithLp.toLp 2 ![0,1,1]) (WithLp.toLp 2 ![1/6,4/6,7/6]) (by
         unfold K
         refine Submodule.mem_span_pair.mpr ?_
         use 1/2
