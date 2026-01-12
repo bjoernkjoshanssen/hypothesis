@@ -1,3 +1,365 @@
+\begin{definition}\label{Set}
+	\lean{Set}
+	\leanok
+	\href{https://leanprover-community.github.io/mathlib4_docs/Mathlib/Data/Set/Defs.html#Set}
+	{\texttt{Set}}
+	
+	A set is a collection of elements of some type α.
+	In probability theory, a set is an \emph{event}.
+\end{definition}
+
+\begin{definition}\label{Subtype}
+	\lean{Subtype}
+	\leanok
+	\href{https://leanprover-community.github.io/mathlib4_docs/Init/Prelude.html#Subtype}
+	{\texttt{Subtype}}
+	
+	All the elements of a type that satisfy a predicate.
+\end{definition}
+
+\begin{definition}\label{Set.univ}
+	\lean{Set.univ}
+	\leanok
+	\uses{Set, Subtype}
+	\href{https://leanprover-community.github.io/mathlib4_docs/Mathlib/Data/Set/Defs.html#Set.univ}
+	{\texttt{Set.univ}}
+	
+	The universal set on a type α is the set containing all elements of α.
+	It plays the role of \emph{state space} or \emph{sample space} in probability theory.
+\end{definition}
+
+\begin{definition}\label{Bool}
+	\lean{Bool}
+	\leanok
+	\href{https://leanprover-community.github.io/mathlib4_docs/Init/Prelude.html#Bool}
+	{\texttt{Bool}}
+	
+	The Boolean values, true and false.
+	Can also be used to represent ``heads and tails'' in probability theory.
+\end{definition}
+
+\begin{definition}\label{Prod}
+	\lean{Prod}
+	\leanok
+	\href{https://leanprover-community.github.io/mathlib4_docs/Init/Prelude.html#Prod}
+	{\texttt{Prod}}
+	
+
+The product type, usually written α × β. Product types are also called pair or tuple types. Elements of this type are pairs in which the first element is an α and the second element is a β.
+
+For example, Bool × Bool can be used to represent two successive tosses of a coin.
+\end{definition}
+
+\begin{lemma}\label{Prod.ext}
+	\lean{Prod.ext}
+	\leanok
+	\uses{Prod}
+	\href{https://leanprover-community.github.io/mathlib4_docs/Init/Ext.html#Prod.ext}
+	{\texttt{Prod.ext}}
+	
+	The condition for two pairs to be equal.
+\end{lemma}
+
+\begin{lemma}\label{Set.ext}
+	\lean{Set.ext}
+	\leanok
+	\uses{Set}
+	\href{https://leanprover-community.github.io/mathlib4_docs/Mathlib/Data/Set/Defs.html#Set.ext}
+	{\texttt{Set.ext}}
+	
+	The condition for two sets to be equal.
+\end{lemma}
+
+\begin{definition}\label{Set.Icc}
+	\lean{Set.Icc}
+	\leanok
+	\uses{Set, Subtype}
+	\href{https://leanprover-community.github.io/mathlib4_docs/Mathlib/Order/Interval/Set/Defs.html#Set.Icc}
+	{\texttt{Set.Icc}}
+	
+	Icc a b is the left-closed right-closed interval $[a,b]$.
+	For example, taking $a=1\in\mathbb N$ and $b=6$ we get the possible outcomes from tossing a die.
+\end{definition}
+
+\begin{definition}\label{Nat}
+	\lean{Nat}
+	\leanok
+	\href{https://leanprover-community.github.io/mathlib4_docs/Init/Prelude.html#Nat}
+	{\texttt{Nat}}
+	
+	The natural numbers, starting at zero.
+\end{definition}
+
+\begin{definition}\label{Real}
+	\lean{Real}
+	\leanok
+	\href{https://leanprover-community.github.io/mathlib4_docs/Mathlib/Data/Real/Basic.html#Real}
+	{\texttt{Real}}
+	
+	The type $\mathbb R$ of real numbers constructed as equivalence classes of Cauchy sequences of rational numbers.
+\end{definition}
+
+
+\begin{definition}\label{NNReal}
+	\lean{NNReal}
+	\leanok
+	\uses{Real, Subtype}
+	\href{https://leanprover-community.github.io/mathlib4_docs/Mathlib/Data/NNReal/Defs.html#NNReal}
+	{\texttt{NNReal}}
+	
+	Nonnegative real numbers, denoted as ℝ≥0 within the NNReal namespace.
+\end{definition}
+
+\begin{definition}\label{WithTop}
+	\lean{WithTop}
+	\leanok
+
+	\href{https://leanprover-community.github.io/mathlib4_docs/Mathlib/Order/TypeTags.html#WithTop}
+	{\texttt{WithTop}}
+	
+Attach $\top$ to a type. For example $\top$ could be $+\infty$, a possible value of the measure of a set.
+\texttt{WithTop} is superficially the same as \texttt{Option}.
+\end{definition}
+
+\begin{definition}\label{ENNReal}
+	\lean{ENNReal}
+	\leanok
+	\uses{NNReal, WithTop}
+	\href{https://leanprover-community.github.io/mathlib4_docs/Mathlib/Data/ENNReal/Basic.html#ENNReal}
+	{\texttt{ENNReal}}
+	
+The extended nonnegative real numbers. This is usually denoted [0, ∞], and is relevant as the codomain of a measure.
+\end{definition}
+
+\begin{definition}\label{Set.compl}
+	\lean{Set.compl}
+	\leanok
+	\uses{Set, Subtype}
+	\href{https://leanprover-community.github.io/mathlib4_docs/Mathlib/Data/Set/Defs.html#Set.compl}
+	{\texttt{Set.compl}}
+	
+The complement of a set $s$ is the set of elements not contained in $s$.
+
+Note that you should not use this definition directly, but instead write $s^c$.
+\end{definition}
+
+\begin{definition}\label{Set.inter}
+	\lean{Set.inter}
+	\leanok
+	\uses{Set, Subtype}
+	\href{https://leanprover-community.github.io/mathlib4_docs/Mathlib/Data/Set/Defs.html#Set.inter}
+	{\texttt{Set.inter}}
+	
+The intersection of two sets s and t is the set of elements contained in both s and t.
+
+Note that you should not use this definition directly, but instead write s ∩ t.
+\end{definition}
+
+\begin{definition}\label{Set.union}
+	\lean{Set.union}
+	\leanok
+	\uses{Set, Subtype}
+	\href{https://leanprover-community.github.io/mathlib4_docs/Mathlib/Data/Set/Defs.html#Set.union}
+	{\texttt{Set.union}}
+	
+The union of two sets s and t is the set of elements contained in either s or t.
+
+Note that you should not use this definition directly, but instead write s ∪ t.
+\end{definition}
+\begin{definition}\label{Set.singleton}
+	\lean{Set.singleton}
+	\leanok
+	\uses{Set, Subtype}
+	\href{https://leanprover-community.github.io/mathlib4_docs/Mathlib/Data/Set/Defs.html#Set.singleton}
+	{\texttt{Set.singleton}}
+	
+The singleton of an element $a$ is the set with $a$ as a single element.
+
+Note that you should not use this definition directly, but instead write $\{a\}$.
+
+In probability theory, $a$ is an outcome and $\{a\}$ is an event.
+\end{definition}
+
+\begin{definition}\label{Set.powerset}
+	\lean{Set.powerset}
+	\leanok
+	\uses{Set, Subtype}
+	\href{https://leanprover-community.github.io/mathlib4_docs/Mathlib/Data/Set/Defs.html#Set.powerset}
+	{\texttt{Set.powerset}}
+	
+𝒫 s is the set of all subsets of s.
+
+In probability theory, this may be the family of all events; or some subsets may fail to be events.
+\end{definition}
+
+
+\begin{definition}\label{Set.iUnion}
+	\lean{Set.iUnion}
+	\leanok
+	\uses{Set}
+	\href{https://leanprover-community.github.io/mathlib4_docs/Mathlib/Order/SetNotation.html#Set.iUnion}
+	{\texttt{Set.iUnion}}
+	Indexed union of a family of sets.
+\end{definition}
+
+\begin{definition}\label{MeasurableSpace}
+	\lean{MeasurableSpace}
+	\leanok
+	\uses{Set.compl, Set.iUnion, Nat}
+	\href{https://leanprover-community.github.io/mathlib4_docs/Mathlib/MeasureTheory/MeasurableSpace/Defs.html#MeasurableSpace}
+	{\texttt{MeasurableSpace}}
+	
+A measurable space is a space equipped with a σ-algebra:
+
+ MeasurableSet (the sets in the $\sigma$-algebra $\mathcal A$)
+ 
+ MeasurableSet.empty ($\emptyset\in\mathcal A$ )
+ 
+ MeasurableSet.compl ($\mathcal A$ is closed under complement)
+ 
+ MeasurableSet.iUnion ($\mathcal A$ is closed under countable union, indexed by $\mathbb N$)
+  
+
+\end{definition}
+
+\begin{definition}\label{Measure}
+	\lean{Measure}
+	\leanok
+	\uses{MeasurableSpace}
+	\href{https://leanprover-community.github.io/mathlib4_docs/Mathlib/MeasureTheory/Measure/MeasureSpaceDef.html#MeasureTheory.Measure}
+	{\texttt{Measure}}
+
+A measure is defined to be an outer measure that is countably additive on measurable sets, with the additional assumption that the outer measure is the canonical extension of the restricted measure.
+
+The measure of a set s, denoted μ s, is an extended nonnegative real. The real-valued version is written μ.real s.
+\end{definition}
+
+
+\begin{definition}\label{ProbabilityMeasure}
+	\lean{ProbabilityMeasure}
+	\leanok
+	\uses{Measure}
+	\href{https://leanprover-community.github.io/mathlib4_docs/Mathlib/MeasureTheory/Measure/ProbabilityMeasure.html#MeasureTheory.ProbabilityMeasure}
+	{\texttt{ProbabilityMeasure}}
+
+Probability measures are defined as the subtype of measures that have the property of being probability measures (i.e., their total mass is one).
+\end{definition}
+
+\begin{definition}\label{Measure.map}
+	\lean{Measure.map}
+	\leanok
+	\uses{Measure}
+	\href{https://leanprover-community.github.io/mathlib4_docs/Mathlib/MeasureTheory/Measure/Map.html#MeasureTheory.Measure.map}
+	{\texttt{Measure.map}}
+
+The pushforward of a measure. It is defined to be 0 if f is not an almost everywhere measurable function.
+
+For the pushforward of m along f, the outer measure on s is defined to be m (f ⁻¹' s).
+
+\end{definition}
+
+
+\begin{definition}\label{ProbabilityMeasure.map}
+	\lean{ProbabilityMeasure.map}
+	\leanok
+	\uses{Measure.map, ProbabilityMeasure}
+	\href{https://leanprover-community.github.io/mathlib4_docs/Mathlib/MeasureTheory/Measure/ProbabilityMeasure.html#MeasureTheory.ProbabilityMeasure.map}
+	{\texttt{ProbabilityMeasure.map}}
+
+The pushforward of a probability measure.
+
+It is suggested on page 4 of Jacod and Protter.
+
+
+\end{definition}
+
+\begin{definition}\label{PMF}
+	\lean{PMF}
+	\leanok
+	\uses{ENNReal}
+	\href{https://leanprover-community.github.io/mathlib4_docs/Mathlib/Probability/ProbabilityMassFunction/Basic.html#PMF}
+		{\texttt{PMF}}
+	Probability mass function.
+\end{definition}
+
+\begin{definition}\label{PMF.uniformOfFintype}
+	\lean{PMF.uniformOfFintype}
+	\leanok
+	\uses{PMF}
+	\href{https://leanprover-community.github.io/mathlib4_docs/Mathlib/Probability/Distributions/Uniform.html#PMF.uniformOfFintype}
+		{\texttt{PMF.uniformOfFintype}}
+		Uniform distribution, as in the Example on page 5 of Jacod and Protter.
+\end{definition}
+
+\section{Chapter 2}
+
+\begin{definition}\label{MeasurableSpace.generateFrom}
+	\lean{MeasurableSpace.generateFrom}
+	\leanok
+	\uses{MeasurableSpace}
+	\href{https://leanprover-community.github.io/mathlib4_docs/Mathlib/MeasureTheory/MeasurableSpace/Defs.html#MeasurableSpace.generateFrom}
+		{\texttt{MeasurableSpace.generateFrom}}
+		The $\sigma$-algebra generated by a family of sets.
+\end{definition}
+
+\begin{definition}\label{MeasurableSpace.generateFrom_singleton}
+	\lean{MeasurableSpace.generateFrom_singleton}
+	\leanok
+	\uses{MeasurableSpace.generateFrom}
+	\href{https://leanprover-community.github.io/mathlib4_docs/Mathlib/MeasureTheory/MeasurableSpace/MeasurablyGenerated.html#MeasurableSpace.generateFrom_singleton}
+		{\texttt{MeasurableSpace.generateFrom}}
+		The $\sigma$-algebra generated by a singleton. Not sure why it requires special mention.
+\end{definition}
+
+
+The following results say that the trivial $\sigma$-algebra $\bot$ can be generated in three ways:
+theorem MeasurableSpace.generateFrom_empty{α : Type u_1} :
+generateFrom ∅ = ⊥
+source
+theorem MeasurableSpace.generateFrom_singleton_empty{α : Type u_1} :
+generateFrom {∅} = ⊥
+source
+theorem MeasurableSpace.generateFrom_singleton_univ{α : Type u_1} :
+generateFrom {Set.univ} = ⊥
+The powerset as a $\sigma$-algebra is $\top$, for example (⊤ : MeasurableSpace ℝ).
+
+
+\begin{definition}\label{TopologicalSpace}
+	\lean{TopologicalSpace}
+	\leanok
+	\href{https://leanprover-community.github.io/mathlib4_docs/Mathlib/Topology/Defs/Basic.html#TopologicalSpace}
+		{\texttt{TopologicalSpace}}
+
+		A topology on a given type.
+\end{definition}
+
+\begin{definition}\label{borel}
+	\lean{borel}
+	\leanok
+	\uses{TopologicalSpace, MeasurableSpace}
+	\href{https://leanprover-community.github.io/mathlib4_docs/Mathlib/MeasureTheory/Constructions/BorelSpace/Basic.html#borel}
+		{\texttt{borel}}
+
+		MeasurableSpace structure generated by TopologicalSpace.
+\end{definition}
+
+\begin{theorem}\label{borel_eq_generateFrom_Iic_rat}
+	\lean{borel_eq_generateFrom_Iic_rat}
+	\leanok
+	\uses{borel}
+	\href{https://leanprover-community.github.io/mathlib4_docs/Mathlib/MeasureTheory/Constructions/BorelSpace/Real.html#Real.borel_eq_generateFrom_Iic_rat}
+		{\texttt{borel_eq_generateFrom_Iic_rat}}
+
+Theorem 2.1 (page 8) in Jacod and Protter.
+\end{theorem}
+
+The fact that a measure is finitely additive is \texttt{measure_union}.
+The next property mentioned in JP is \texttt{MeasureTheory.Measure.mono}.
+
+Theorem 2.3 is \texttt{MeasureTheory.measure_biUnion_eq_iSup}.
+https://leanprover-community.github.io/mathlib4_docs/Mathlib/MeasureTheory/Measure/MeasureSpace.html#MeasureTheory.measure_biUnion_eq_iSup
+
+https://leanprover-community.github.io/mathlib4_docs/Mathlib/Algebra/Notation/Indicator.html#Set.indicator
 % In this file you should put the actual content of the blueprint.
 % It will be used both by the web and the print version.
 % It should *not* include the \begin{document}
