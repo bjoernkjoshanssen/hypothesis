@@ -313,15 +313,11 @@ It is suggested on page 4 of Jacod and Protter.
 
 
 The following results say that the trivial $\sigma$-algebra $\bot$ can be generated in three ways:
-theorem MeasurableSpace.generateFrom_empty{α : Type u_1} :
-generateFrom ∅ = ⊥
-source
-theorem MeasurableSpace.generateFrom_singleton_empty{α : Type u_1} :
-generateFrom {∅} = ⊥
-source
-theorem MeasurableSpace.generateFrom_singleton_univ{α : Type u_1} :
-generateFrom {Set.univ} = ⊥
-The powerset as a $\sigma$-algebra is $\top$, for example (⊤ : MeasurableSpace ℝ).
+\verb!MeasurableSpace.generateFrom_empty!,
+\verb!MeasurableSpace.generateFrom_singleton_empty!,
+\verb!MeasurableSpace.generateFrom_singleton_univ!.
+
+The powerset as a $\sigma$-algebra is $\top$, for example ($\top$ : MeasurableSpace $\mathbb R$).
 
 
 \begin{definition}\label{TopologicalSpace}
@@ -348,18 +344,20 @@ The powerset as a $\sigma$-algebra is $\top$, for example (⊤ : MeasurableSpace
 	\leanok
 	\uses{borel}
 	\href{https://leanprover-community.github.io/mathlib4_docs/Mathlib/MeasureTheory/Constructions/BorelSpace/Real.html#Real.borel_eq_generateFrom_Iic_rat}
-		{\texttt{borel_eq_generateFrom_Iic_rat}}
+		{\texttt{borel\_eq\_generateFrom\_Iic\_rat}}
 
 Theorem 2.1 (page 8) in Jacod and Protter.
 \end{theorem}
 
-The fact that a measure is finitely additive is \texttt{measure_union}.
+The fact that a measure is finitely additive is \texttt{measure\_union}.
 The next property mentioned in JP is \texttt{MeasureTheory.Measure.mono}.
 
-Theorem 2.3 is \texttt{MeasureTheory.measure_biUnion_eq_iSup}.
-https://leanprover-community.github.io/mathlib4_docs/Mathlib/MeasureTheory/Measure/MeasureSpace.html#MeasureTheory.measure_biUnion_eq_iSup
+Theorem 2.3 is
+\href{https://leanprover-community.github.io/mathlib4_docs/Mathlib/MeasureTheory/Measure/MeasureSpace.html#MeasureTheory.measure_biUnion_eq_iSup}{\texttt{MeasureTheory.measure\_biUnion\_eq\_iSup}}
 
-https://leanprover-community.github.io/mathlib4_docs/Mathlib/Algebra/Notation/Indicator.html#Set.indicator
+Set indicator:
+\href{https://leanprover-community.github.io/mathlib4_docs/Mathlib/Algebra/Notation/Indicator.html#Set.indicator}{\texttt{Set.indicator}}
+
 % In this file you should put the actual content of the blueprint.
 % It will be used both by the web and the print version.
 % It should *not* include the \begin{document}
