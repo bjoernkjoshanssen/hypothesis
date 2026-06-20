@@ -6,16 +6,42 @@ import Mathlib.MeasureTheory.Function.ConditionalExpectation.CondexpL1
 # Linear regression
 
 over ℝ or ℂ
+
+Underscores are alternative versions.
 -/
 
-noncomputable def K₁ {n : ℕ} {R : Type*} [RCLike R] (x : Fin n → R) :=
-    @Submodule.span R (EuclideanSpace R (Fin n)) _ _ _ {WithLp.toLp 2 x, WithLp.toLp 2 fun _ => 1}
+open WithLp
 
-theorem hxK₁ {n : ℕ} {R : Type*} [RCLike R] (x : Fin n → R) : WithLp.toLp 2 x ∈ K₁ x := Submodule.mem_span_of_mem (Set.mem_insert (WithLp.toLp 2 x) {WithLp.toLp 2 fun _ ↦ 1})
-theorem h1K₁ {n : ℕ} {R : Type*} [RCLike R] (x : Fin n → R) : WithLp.toLp 2 (fun _ ↦ 1) ∈ K₁ x := Submodule.mem_span_of_mem (Set.mem_insert_of_mem (WithLp.toLp 2 x) rfl)
+noncomputable def K₁ {n : ℕ} {R : Type*} [RCLike R] (x : Fin n → R) :=
+    @Submodule.span R (EuclideanSpace R (Fin n)) _ _ _ {toLp 2 x, toLp 2 fun _ => 1}
+noncomputable def K₁_ {n : ℕ} {R : Type*} [RCLike R] (x : EuclideanSpace R (Fin n)) :=
+    @Submodule.span R (EuclideanSpace R (Fin n)) _ _ _ {x, toLp 2 fun _ => 1}
+
+theorem hxK₁ {n : ℕ} {R : Type*} [RCLike R] (x : Fin n → R) : toLp 2 x ∈ K₁ x :=
+  Submodule.mem_span_of_mem (Set.mem_insert (toLp 2 x) {toLp 2 fun _ ↦ 1})
+theorem hxK₁_ {n : ℕ} {R : Type*} [RCLike R] (x : EuclideanSpace R (Fin n)) : x ∈ K₁ x :=
+  Submodule.mem_span_of_mem (Set.mem_insert x {toLp 2 fun _ ↦ 1})
+
+theorem h1K₁ {n : ℕ} {R : Type*} [RCLike R] (x : Fin n → R) : toLp 2 (fun _ ↦ 1) ∈ K₁ x :=
+  Submodule.mem_span_of_mem (Set.mem_insert_of_mem (toLp 2 x) rfl)
+theorem h1K₁_ {n : ℕ} {R : Type*} [RCLike R] (x : EuclideanSpace R (Fin n)) :
+  toLp 2 (fun _ ↦ 1) ∈ K₁ x :=
+  Submodule.mem_span_of_mem (Set.mem_insert_of_mem x rfl)
 
 theorem topsub₁ {n : ℕ} {R : Type*} [RCLike R] (x : Fin n → R) :
-    ⊤ ≤ Submodule.span R (Set.range ![(⟨WithLp.toLp 2 x, hxK₁ x⟩ : K₁ x), (⟨WithLp.toLp 2 fun _ => 1, h1K₁ x⟩ : K₁ x)]) := by
+    ⊤ ≤ Submodule.span R (Set.range ![(⟨toLp 2 x, hxK₁ x⟩ : K₁ x), (⟨toLp 2 fun _ => 1, h1K₁ x⟩ : K₁ x)]) := by
+  simp [K₁]
+  apply Submodule.eq_top_iff'.mpr
+  simp
+  intro a ha
+  apply Submodule.mem_span_pair.mpr
+  obtain ⟨c,d,hcd⟩ := Submodule.mem_span_pair.mp ha
+  use d, c
+  simp
+  rw [← hcd]
+  rw [add_comm]
+theorem topsub₁_ {n : ℕ} {R : Type*} [RCLike R] (x : EuclideanSpace R (Fin n)) :
+    ⊤ ≤ Submodule.span R (Set.range ![(⟨x, hxK₁ x⟩ : K₁ x), (⟨toLp 2 fun _ => 1, h1K₁ x⟩ : K₁ x)]) := by
   simp [K₁]
   apply Submodule.eq_top_iff'.mpr
   simp
@@ -30,7 +56,9 @@ theorem topsub₁ {n : ℕ} {R : Type*} [RCLike R] (x : Fin n → R) :
 
 
 def Kvec₁ {n : ℕ} {R : Type*} [RCLike R] (x : Fin n → R) :=
-    ![(⟨WithLp.toLp 2 x, hxK₁ x⟩ : K₁ x), (⟨WithLp.toLp 2 fun _ => 1, h1K₁ x⟩ : K₁ x)]
+    ![(⟨toLp 2 x, hxK₁ x⟩ : K₁ x), (⟨toLp 2 fun _ => 1, h1K₁ x⟩ : K₁ x)]
+def Kvec₁_ {n : ℕ} {R : Type*} [RCLike R] (x : EuclideanSpace R (Fin n)) :=
+    ![(⟨x, hxK₁ x⟩ : K₁ x), (⟨toLp 2 fun _ => 1, h1K₁ x⟩ : K₁ x)]
 
 
 /-- Given points `(x i, y i)`, obtain the coordinates `[c, d]` such that
@@ -38,34 +66,224 @@ def Kvec₁ {n : ℕ} {R : Type*} [RCLike R] (x : Fin n → R) :=
 noncomputable def regression_coordinates₁ {n : ℕ} {R : Type*} [RCLike R] (x y : Fin n → R)
     (lin_indep : LinearIndependent R (Kvec₁ x)) :
     Fin 2 → R := fun i => ((Module.Basis.mk lin_indep (topsub₁ _)).repr
-      ⟨Submodule.starProjection (K₁ x) (WithLp.toLp 2 y),
-       Submodule.starProjection_apply_mem (K₁ x) (WithLp.toLp 2 y)⟩) i
+      ⟨Submodule.starProjection (K₁ x) (toLp 2 y),
+       Submodule.starProjection_apply_mem (K₁ x) (toLp 2 y)⟩) i
+noncomputable def regression_coordinates₁_ {n : ℕ} {R : Type*} [RCLike R] (x y : EuclideanSpace R (Fin n))
+    (lin_indep : LinearIndependent R (Kvec₁ x)) :
+    Fin 2 → R := fun i => ((Module.Basis.mk lin_indep (topsub₁ _)).repr
+      ⟨Submodule.starProjection (K₁ x) y,
+       Submodule.starProjection_apply_mem (K₁ x) y⟩) i
 
 
 local notation x "ᵀ" => Matrix.transpose x
 
 def A {m : ℕ} {R : Type*} [RCLike R] (x : Fin m → R) : Matrix (Fin m) (Fin 2) R :=
     ![x, fun _ => 1]ᵀ -- or maybe (Matrix.of ![x, fun _ => 1])ᵀ
+def A_ {m : ℕ} {R : Type*} [RCLike R] (x : EuclideanSpace R (Fin m)) : Matrix (Fin m) (Fin 2) R :=
+    ![x, fun _ => 1]ᵀ -- or maybe (Matrix.of ![x, fun _ => 1])ᵀ
 
 noncomputable def getCoeffs {m : ℕ} {R : Type*} [RCLike R] (x y : Fin m → R) :=
   Matrix.mulᵣ (Matrix.mulᵣ (Matrix.mulᵣ ((A x)ᵀ) (A x))⁻¹ ((A x)ᵀ))
   (fun i (_ : Fin 1) => y i)
 
-/-- getCoeffs is supposed to mimize this -/
+/-- getCoeffs is supposed to mimize this.
+But if `R=ℂ` the `^2` is wrong.
+ -/
 def theDistance {m : ℕ} {R : Type*} [RCLike R] (x y : Fin m → R)
   (M : Matrix (Fin 2) (Fin 1) R) : R :=
   Finset.sum (Finset.univ : Finset (Fin m))
-    (fun i => by exact (y i - (M 0 0 + (M 1 0) * (x i)))^2)
+    (fun i => (y i - (M 0 0 + (M 1 0) * (x i)))^2)
 
-/-- `getCoeffs` minimizes `theDistance`. -/
+/-- If we read "Relationship between projections and least squares" math stackexchange
+carefully, this is how it must be. -/
+def theDist {m : ℕ} {R : Type*} [RCLike R] (x y : Fin m → R)
+  (M : Matrix (Fin 2) (Fin 1) R) : R :=
+  Finset.sum (Finset.univ : Finset (Fin m))
+    (fun i => (y i - ((M 0 0) * (x i) + M 1 0))^2)
+
+/-- `getCoeffs` minimizes `theDistance`.
+
+Should not write [LE R] but use built-in distance
+-/
 theorem getCoeffs_minimizes_theDistance
-   {m : ℕ} {R : Type*} [RCLike R] [LE R] (x y : Fin m → R) (M : Matrix (Fin 2) (Fin 1) R)
-: ∀ a b : R,
-  theDistance x y (getCoeffs x y) ≤ theDistance x y M := by
-  intro a b
+   {m : ℕ} (x y : Fin m → ℝ) (M : Matrix (Fin 2) (Fin 1) ℝ) :
+  RCLike.re (theDistance x y (getCoeffs x y)) ≤ RCLike.re (theDistance x y M) := by
   unfold theDistance getCoeffs
   -- use Second Derivative Test with f = theDistance x y ?
   sorry
+
+theorem getCoeffs_minimizes_theDist₀
+    (x y : Fin 0 → ℝ) (M : Matrix (Fin 2) (Fin 1) ℝ) :
+    theDist x y (getCoeffs x y) ≤ theDist x y M := by
+  simp [theDist, getCoeffs, A, Matrix.transpose]
+theorem getCoeffs_minimizes_theDistance₀
+    (x y : Fin 0 → ℝ) (M : Matrix (Fin 2) (Fin 1) ℝ) :
+    theDistance x y (getCoeffs x y) ≤ theDistance x y M := by
+  simp [theDistance, getCoeffs, A, Matrix.transpose]
+
+/-- `getCoeffs` does not minimize `theDistance`.
+-/
+theorem not_getCoeffs_minimizes_theDistance₁ :
+    ∃ (x y : Fin 1 → ℝ) (M : Matrix (Fin 2) (Fin 1) ℝ),
+    ¬ theDistance x y (getCoeffs x y) ≤ theDistance x y M := by
+  use ![0], ![1], !![1;0]
+  unfold theDistance getCoeffs A Matrix.transpose
+  repeat rw [Fin.sum_univ_one]
+  repeat rw [Matrix.mulᵣ_eq]
+  repeat rw [Matrix.mul_apply]
+  repeat rw [Fin.sum_univ_one]
+  repeat rw [Matrix.mul_apply]
+  repeat rw [Fin.sum_univ_two]
+  simp
+  rw [Matrix.inv_def, Matrix.det_fin_two, Matrix.adjugate_fin_two]
+  repeat rw [Matrix.mul_apply]
+  simp
+theorem not_getCoeffs_minimizes_theDist₁ :
+    ∃ (x y : Fin 1 → ℝ) (M : Matrix (Fin 2) (Fin 1) ℝ),
+    ¬ theDist x y (getCoeffs x y) ≤ theDist x y M := by
+  use ![1], ![1], !![1;0]
+  -- intro x y M
+  -- have ⟨c,d,hcd⟩ : ∃ c, ∃ d, M = !![c;d] := by
+  --   use M 0 0, M 1 0; ext i j
+  --   fin_cases j; fin_cases i <;> simp
+  -- subst hcd
+  -- have ⟨a,ha⟩ : ∃ a, x = ![a] := by
+  --   use x 0; ext i; fin_cases i <;> simp
+  -- subst ha
+  -- have ⟨b,hb⟩ : ∃ b, y = ![b] := by
+  --   use y 0; ext i; fin_cases i<;> simp
+  -- subst hb
+  unfold theDist getCoeffs A Matrix.transpose
+  repeat rw [Fin.sum_univ_one]
+  repeat rw [Matrix.mulᵣ_eq]
+  repeat rw [Matrix.mul_apply]
+  repeat rw [Fin.sum_univ_one]
+  repeat rw [Matrix.mul_apply]
+  repeat rw [Fin.sum_univ_two]
+  simp
+  rw [Matrix.inv_def, Matrix.det_fin_two, Matrix.adjugate_fin_two]
+  repeat rw [Matrix.mul_apply]
+  simp
+
+
+/-- When the `x`'s aren't distinct,
+it doesn't work. -/
+theorem getCoeffs_minimizes_theDistance₂ (b : ℝ) :
+    ∃ (x y : Fin 2 → ℝ) (M : Matrix (Fin 2) (Fin 1) ℝ),
+    ¬ theDistance x y (getCoeffs x y) ≤ theDistance x y M := by
+  use ![0,0], ![0,1], !![1/2;b]
+  unfold theDistance getCoeffs A Matrix.transpose
+  repeat rw [Fin.sum_univ_two]
+  repeat rw [Matrix.mulᵣ_eq]
+  repeat rw [Matrix.mul_apply]
+  repeat rw [Fin.sum_univ_two]
+  repeat rw [Matrix.mul_apply]
+  repeat rw [Fin.sum_univ_two]
+  simp
+  rw [Matrix.inv_def, Matrix.det_fin_two, Matrix.adjugate_fin_two]
+  repeat rw [Matrix.mul_apply]
+  simp
+  have : (2:ℝ) ^ 2 = 4 := by grind
+  rw [this]
+  grind
+  /-  grind output:
+  h_1 : (a₀ * a₀ + a₁ * a₁) * 2 - (a₀ + a₁) * (a₀ + a₁) = 0
+h_2 : b₁ = 0
+h_3 : b₀ = 0
+h_4 : c = 0
+⊢ False
+-/
+
+
+theorem getCoeffs_minimizes_theDist
+    (x y : Fin 2 → ℝ)
+    (hx : x 0 ≠ x 1)
+    (M : Matrix (Fin 2) (Fin 1) ℝ)
+    :
+    theDist x y (getCoeffs x y) ≤ theDist x y M := by
+  unfold theDist getCoeffs
+  unfold A Matrix.transpose
+  have ⟨c,d,hcd⟩ : ∃ c, ∃ d, M = !![c;d] := by
+    use M 0 0, M 1 0; ext i j
+    fin_cases j; fin_cases i <;> simp
+  subst hcd
+  have ⟨a₀,a₁,ha⟩ : ∃ a₀ a₁, x = ![a₀,a₁] := by
+    use x 0, x 1; ext i; fin_cases i <;> simp
+  subst ha
+  have ⟨b₀,b₁,hb⟩ : ∃ b₀ b₁, y = ![b₀,b₁] := by
+    use y 0, y 1; ext i; fin_cases i<;> simp
+  subst hb
+  repeat rw [Fin.sum_univ_two]
+  repeat rw [Matrix.mulᵣ_eq]
+  repeat rw [Matrix.mul_apply]
+  repeat rw [Fin.sum_univ_two]
+  repeat rw [Matrix.mul_apply]
+  repeat rw [Fin.sum_univ_two]
+  simp
+  rw [Matrix.inv_def, Matrix.det_fin_two, Matrix.adjugate_fin_two]
+  repeat rw [Matrix.mul_apply]
+  simp at hx ⊢
+  field_simp
+  have h_2 : b₀ = b₁ := sorry
+  have h_3 : a₀ = b₁ := sorry
+  have h_4 : d = b₁ := sorry
+  subst h_2 h_3 h_4
+  simp
+  by_cases hc : c = 0
+  subst c
+  by_cases hd : d = 0
+  · subst d
+    repeat rw [pow_two]
+    simp
+  by_cases ha : a₁ = 0
+  · subst a₁
+    field_simp
+    ring_nf
+    have : d ^ 4 * d⁻¹ ^ 2 = d ^ 2 := by grind
+    rw [this]
+    have : d ^ 6 * d⁻¹ ^ 4 = d ^ 2 := by grind
+    rw [this]
+    ring_nf
+    simp
+  all_goals sorry
+
+
+
+/-- even with distinct x's, something is wrong. -/
+theorem not_getCoeffs_minimizes_theDistance_true
+    (x y : Fin 2 → ℝ)
+    (hx' : x = ![0,1])
+    (hy' : y = ![0,1])
+    (M : Matrix (Fin 2) (Fin 1) ℝ)
+    (hM : M = !![1/2; 0])
+    :
+    ¬ theDistance x y (getCoeffs x y) ≤ theDistance x y M := by
+  subst hx' hy' hM
+  -- have ⟨c,d,hcd⟩ : ∃ c, ∃ d, M = !![c;d] := by
+  --   use M 0 0, M 1 0; ext i j
+  --   fin_cases j; fin_cases i <;> simp
+  -- subst hcd
+  -- have ⟨a₀,a₁,ha⟩ : ∃ a₀ a₁, x = ![a₀,a₁] := by
+  --   use x 0, x 1; ext i; fin_cases i <;> simp
+  -- subst ha
+  -- have ⟨b₀,b₁,hb⟩ : ∃ b₀ b₁, y = ![b₀,b₁] := by
+  --   use y 0, y 1; ext i; fin_cases i<;> simp
+  -- subst hb
+  unfold theDistance getCoeffs A Matrix.transpose
+  repeat rw [Fin.sum_univ_two]
+  repeat rw [Matrix.mulᵣ_eq]
+  repeat rw [Matrix.mul_apply]
+  repeat rw [Fin.sum_univ_two]
+  repeat rw [Matrix.mul_apply]
+  repeat rw [Fin.sum_univ_two]
+  simp
+  rw [Matrix.inv_def, Matrix.det_fin_two, Matrix.adjugate_fin_two]
+  repeat rw [Matrix.mul_apply]
+  simp
+  field_simp
+  ring_nf
+  linarith
+
 
 lemma matrix_smul {m : ℕ} {R : Type*} [RCLike R] (b : Matrix (Fin m) (Fin 1) R)
     (v : Matrix (Fin 2) (Fin 2) R) (c : R)
@@ -168,7 +386,7 @@ lemma matmulcase {m : ℕ} {R : Type*} [RCLike R] (x : Fin m → R) :
 
 theorem matrix_proj_in_subspace {m : ℕ} {R : Type*} [RCLike R] (x : Fin m → R)
     (Y : Matrix (Fin m) (Fin 1) R) :
-  (WithLp.toLp 2 fun i ↦ (A x).mulᵣ (((A xᵀ.mulᵣ (A x))⁻¹.mulᵣ (A xᵀ)).mulᵣ Y) i 0) ∈ K₁ x := by
+  (toLp 2 fun i ↦ (A x).mulᵣ (((A xᵀ.mulᵣ (A x))⁻¹.mulᵣ (A xᵀ)).mulᵣ Y) i 0) ∈ K₁ x := by
   apply Submodule.mem_span_pair.mpr
   let α := ((A x)ᵀ * (A x))⁻¹ * (A x)ᵀ * Y
   use α 0 0, α 1 0
@@ -244,7 +462,7 @@ theorem star_projection_is_matrix_product {m : ℕ} {R : Type*} [RCLike R] [Triv
   (fun i => Matrix.mulᵣ (A x) (
   Matrix.mulᵣ (Matrix.mulᵣ (Matrix.mulᵣ ((A x)ᵀ) (A x))⁻¹ ((A x)ᵀ))
   (fun (j : Fin m) (_ : Fin 1) => y j)
-  ) i 0) = Submodule.starProjection (K₁ x) (WithLp.toLp 2 y) := by
+  ) i 0) = Submodule.starProjection (K₁ x) (toLp 2 y) := by
   symm
   rw [Submodule.eq_starProjection_of_mem_of_inner_eq_zero]
   sorry
@@ -943,8 +1161,8 @@ theorem average_predicted_value {m : ℕ} (x y : Fin m → ℝ) (h : nonconstant
     let D (j : Fin m) :=  ((c • f).mulᵣ (fun i x ↦ y i) 0 (0:Fin 1) * x j
                        + (c • f).mulᵣ (fun i x ↦ y i) 1 (0:Fin 1))
     let E := ((c • f).mulᵣ (fun i (x:Fin 1) ↦ y i))
-    let E₂ : EuclideanSpace ℝ (Fin 2) := WithLp.toLp 2 fun i => E i 0
-    let F (j : Fin m) := inner ℝ E₂ (WithLp.toLp 2 ![x j, 1])
+    let E₂ : EuclideanSpace ℝ (Fin 2) := toLp 2 fun i => E i 0
+    let F (j : Fin m) := inner ℝ E₂ (toLp 2 ![x j, 1])
     suffices ∑ j, y j = ∑ j, F j by
         rw [this]
         congr
@@ -958,21 +1176,21 @@ theorem average_predicted_value {m : ℕ} (x y : Fin m → ℝ) (h : nonconstant
         ext i
         simp
     rw [this]
-    let v : EuclideanSpace ℝ (Fin 2) := WithLp.toLp 2
+    let v : EuclideanSpace ℝ (Fin 2) := toLp 2
         (c • fun i ↦ f.mulᵣ (fun i x ↦ y i) i (0:Fin 1))
-    let w : EuclideanSpace ℝ (Fin 2) := WithLp.toLp 2
+    let w : EuclideanSpace ℝ (Fin 2) := toLp 2
         (fun i ↦ f.mulᵣ (fun i x ↦ y i) i (0:Fin 1))
 
-    show  ∑ j, y j = ∑ j, inner ℝ v (WithLp.toLp 2 ![x j, 1])
-    show  ∑ j, y j = ∑ j, inner ℝ (c • w) (WithLp.toLp 2 ![x j, 1])
-    have (j : Fin m) : inner ℝ (c • w) (WithLp.toLp 2 ![x j, 1]) =
-        c • inner ℝ (w) (WithLp.toLp 2 ![x j, 1]) := by
-        exact inner_smul_left_eq_smul w (WithLp.toLp 2 ![x j, 1]) c
+    show  ∑ j, y j = ∑ j, inner ℝ v (toLp 2 ![x j, 1])
+    show  ∑ j, y j = ∑ j, inner ℝ (c • w) (toLp 2 ![x j, 1])
+    have (j : Fin m) : inner ℝ (c • w) (toLp 2 ![x j, 1]) =
+        c • inner ℝ (w) (toLp 2 ![x j, 1]) := by
+        exact inner_smul_left_eq_smul w (toLp 2 ![x j, 1]) c
     simp_rw [this]
-    suffices ∑ j, y j = c * ∑ x_1, inner ℝ w (WithLp.toLp 2 ![x x_1, 1])
-        by rw [this];exact Finset.mul_sum Finset.univ (fun i ↦ inner ℝ w (WithLp.toLp 2 ![x i, 1])) c
+    suffices ∑ j, y j = c * ∑ x_1, inner ℝ w (toLp 2 ![x x_1, 1])
+        by rw [this];exact Finset.mul_sum Finset.univ (fun i ↦ inner ℝ w (toLp 2 ![x i, 1])) c
     unfold c
-    suffices (((∑ i, x i ^ 2) * ↑m - (∑ i, x i) ^ 2)) * ∑ j, y j = ∑ x_1, inner ℝ w (WithLp.toLp 2 ![x x_1, 1]) by
+    suffices (((∑ i, x i ^ 2) * ↑m - (∑ i, x i) ^ 2)) * ∑ j, y j = ∑ x_1, inner ℝ w (toLp 2 ![x x_1, 1]) by
         rw [← this]
         set c := (∑ i, x i ^ 2) * ↑m - (∑ i, x i) ^ 2
         set d := ∑ j, y j
@@ -1181,7 +1399,7 @@ lemma getDet₃ (x₀ x₁ x₂ : ℝ) :
         ring_nf
 
 theorem matrix_proj_in_subspace₃ (x : Fin 3 → ℝ) (Y : Matrix (Fin 3) (Fin 1) ℝ) :
-  WithLp.toLp 2 (fun i ↦ (A₃ x).mulᵣ (((A₃ xᵀ.mulᵣ (A₃ x))⁻¹.mulᵣ (A₃ xᵀ)).mulᵣ Y) i 0) ∈ K₁ x := by
+  toLp 2 (fun i ↦ (A₃ x).mulᵣ (((A₃ xᵀ.mulᵣ (A₃ x))⁻¹.mulᵣ (A₃ xᵀ)).mulᵣ Y) i 0) ∈ K₁ x := by
   simp [K₁]
   unfold A₃
   apply Submodule.mem_span_pair.mpr
@@ -1208,7 +1426,7 @@ theorem star_projection_is_matrix_product₃ {x : Fin 3 → ℝ}
     -- this just says ¬ (x 0 = x 1 ∧ x 0 = x 2)
   (fun i => Matrix.mulᵣ (A₃ x) (
   Matrix.mulᵣ (Matrix.mulᵣ (Matrix.mulᵣ ((A₃ x)ᵀ) (A₃ x))⁻¹ ((A₃ x)ᵀ))
-  !![y 0; y 1; y 2]) i 0) = Submodule.starProjection (K₁ x) (WithLp.toLp 2 y) := by
+  !![y 0; y 1; y 2]) i 0) = Submodule.starProjection (K₁ x) (toLp 2 y) := by
   sorry
   -- have : !![y 0; y 1; y 2] = fun i x ↦ y i := by
   --   ext i j; fin_cases i <;> simp;
@@ -1309,15 +1527,15 @@ example (a b c : ℝ) : getCoeffs₃ ![a,b,c] ![0,0,0] = ![![0],![0]] := by
 
 /-- Multivariate regression. -/
 noncomputable def K₂ {n : ℕ} (x₀ x₁ : Fin n → ℝ) := @Submodule.span ℝ (EuclideanSpace ℝ (Fin n)) _ _ _
-    {WithLp.toLp 2 x₀, WithLp.toLp 2 x₁, WithLp.toLp 2 fun _ => 1}
-theorem hxK₂₀ {n : ℕ} (x₀ x₁ : Fin n → ℝ) : WithLp.toLp 2 x₀ ∈ K₂ x₀ x₁ := Submodule.mem_span_of_mem (Set.mem_insert (WithLp.toLp 2 x₀) _)
-theorem hxK₂₁ {n : ℕ} (x₀ x₁ : Fin n → ℝ) : WithLp.toLp 2 x₁ ∈ K₂ x₀ x₁ := Submodule.mem_span_of_mem (by simp)
-theorem h1K₂ {n : ℕ} (x₀ x₁ : Fin n → ℝ) : WithLp.toLp 2 (fun _ ↦ 1) ∈ K₂ x₀ x₁ := Submodule.mem_span_of_mem (by simp)
+    {toLp 2 x₀, toLp 2 x₁, toLp 2 fun _ => 1}
+theorem hxK₂₀ {n : ℕ} (x₀ x₁ : Fin n → ℝ) : toLp 2 x₀ ∈ K₂ x₀ x₁ := Submodule.mem_span_of_mem (Set.mem_insert (toLp 2 x₀) _)
+theorem hxK₂₁ {n : ℕ} (x₀ x₁ : Fin n → ℝ) : toLp 2 x₁ ∈ K₂ x₀ x₁ := Submodule.mem_span_of_mem (by simp)
+theorem h1K₂ {n : ℕ} (x₀ x₁ : Fin n → ℝ) : toLp 2 (fun _ ↦ 1) ∈ K₂ x₀ x₁ := Submodule.mem_span_of_mem (by simp)
 theorem topsub₂ {n : ℕ} (x₀ x₁ : Fin n → ℝ) :
     ⊤ ≤ Submodule.span ℝ (Set.range ![
-      (⟨WithLp.toLp 2 x₀, hxK₂₀ x₀ x₁⟩ : K₂ x₀ x₁),
-      (⟨WithLp.toLp 2 x₁, hxK₂₁ x₀ x₁⟩ : K₂ x₀ x₁),
-      (⟨WithLp.toLp 2 fun _ => 1, h1K₂ x₀ x₁⟩ : K₂ x₀ x₁)]) := by
+      (⟨toLp 2 x₀, hxK₂₀ x₀ x₁⟩ : K₂ x₀ x₁),
+      (⟨toLp 2 x₁, hxK₂₁ x₀ x₁⟩ : K₂ x₀ x₁),
+      (⟨toLp 2 fun _ => 1, h1K₂ x₀ x₁⟩ : K₂ x₀ x₁)]) := by
   simp [K₂]
   apply Submodule.eq_top_iff'.mpr
   simp
@@ -1329,15 +1547,15 @@ theorem topsub₂ {n : ℕ} (x₀ x₁ : Fin n → ℝ) :
   rw [← h]
   grind
 def Kvec₂ {n : ℕ} (x₀ x₁ : Fin n → ℝ) := ![
-  (⟨WithLp.toLp 2 x₀, hxK₂₀ x₀ x₁⟩ : K₂ x₀ x₁),
-  (⟨WithLp.toLp 2 x₁, hxK₂₁ x₀ x₁⟩ : K₂ x₀ x₁),
-  (⟨WithLp.toLp 2 fun _ => 1, h1K₂ x₀ x₁⟩ : K₂ x₀ x₁)]
+  (⟨toLp 2 x₀, hxK₂₀ x₀ x₁⟩ : K₂ x₀ x₁),
+  (⟨toLp 2 x₁, hxK₂₁ x₀ x₁⟩ : K₂ x₀ x₁),
+  (⟨toLp 2 fun _ => 1, h1K₂ x₀ x₁⟩ : K₂ x₀ x₁)]
 
 noncomputable def regression_coordinates₂ {n : ℕ} (x₀ x₁ y : Fin n → ℝ)
     (lin_indep : LinearIndependent ℝ (Kvec₂ x₀ x₁)) :
     Fin 3 → ℝ := fun i => ((Module.Basis.mk lin_indep (topsub₂ _ _)).repr
-      ⟨Submodule.starProjection (K₂ x₀ x₁) (WithLp.toLp 2 y),
-       Submodule.starProjection_apply_mem (K₂ x₀ x₁) (WithLp.toLp 2 y)⟩) i
+      ⟨Submodule.starProjection (K₂ x₀ x₁) (toLp 2 y),
+       Submodule.starProjection_apply_mem (K₂ x₀ x₁) (toLp 2 y)⟩) i
 
 
 lemma indep₀₁₂ : LinearIndependent ℝ (Kvec₁ ![(0 : ℝ), 1, 2]) := by
@@ -1356,7 +1574,7 @@ lemma indep₀₁₂ : LinearIndependent ℝ (Kvec₁ ![(0 : ℝ), 1, 2]) := by
     tauto
 
 lemma hvo₀₁₁ (w : EuclideanSpace ℝ (Fin 3))
-    (hw : w ∈ K₁ ![0, 1, 2]) : inner ℝ (WithLp.toLp 2 ![0, 1, 1] - WithLp.toLp 2 ![1 / 6, 4 / 6, 7 / 6]) w = 0 := by
+    (hw : w ∈ K₁ ![0, 1, 2]) : inner ℝ (toLp 2 ![0, 1, 1] - toLp 2 ![1 / 6, 4 / 6, 7 / 6]) w = 0 := by
   obtain ⟨a,b,h⟩ := Submodule.mem_span_pair.mp hw
   rw [← h]
   simp [inner]
@@ -1381,7 +1599,7 @@ example : regression_coordinates₁ ![(0 : ℝ),1,2] ![0,1,1] indep₀₁₂
   = ![1/2,1/6] := by
   unfold regression_coordinates₁
   simp
-  have hvm : WithLp.toLp 2 ![1 / 6, 4 / 6, 7 / 6] ∈ K₁ ![(0 : ℝ), 1, 2] := by
+  have hvm : toLp 2 ![1 / 6, 4 / 6, 7 / 6] ∈ K₁ ![(0 : ℝ), 1, 2] := by
     refine Submodule.mem_span_pair.mpr ?_
     use 1/2, 1/6
     ext i
@@ -1449,7 +1667,7 @@ example : Unit := by
             measurableSet_iUnion := by
                 intro f h
                 trivial
-        } (by exact fun s a ↦ trivial)
+        } (fun _ _ ↦ trivial)
         {
             measureOf := by intro S; exact (ite (0 ∈ S) 1 0)
             empty := by simp

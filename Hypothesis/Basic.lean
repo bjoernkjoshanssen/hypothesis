@@ -13,7 +13,8 @@ open MeasureTheory ProbabilityTheory
 noncomputable def one_sided_pval (a : ℝ)
   (p : Measure ℝ) :=
   let μ := moment id 1 p
-  p {x | |x - μ| ≥ |a - μ| ∧ Real.sign (x - μ) = Real.sign (a - μ)}
+  p {x | |x - μ| ≥ |a - μ| ∧
+  Real.sign (x - μ) = Real.sign (a - μ)}
 
 noncomputable def one_sided_pvalPMF (a : ℝ)
   (p : PMF ℝ) :=
@@ -22,10 +23,6 @@ noncomputable def one_sided_pvalPMF (a : ℝ)
   p.toMeasure {x | |x - μ| ≥ |a - μ| ∧ Real.sign (x - μ) = Real.sign (a - μ)}
 
 
-noncomputable def two_sided_pval (a : ℝ)
-  (p : Measure ℝ) :=
-  let μ := moment id 1 p
-  p {x |  |x - μ| ≥ |a - μ|}
 
 noncomputable def one_sided_pval' (a : ℝ)
   (p : Measure ℝ) :=
@@ -43,8 +40,16 @@ noncomputable def two_sided_pval' (a : ℝ)
   (ite (a < μ)
     (p (Set.Iic a) + p (Set.Ici (μ + (μ - a)))) 1)
 
+noncomputable def two_sided_pval (a : ℝ)
+  (p : Measure ℝ) :=
+  let μ := moment id 1 p
+  p {x |  |x - μ| ≥ |a - μ|}
+
 def twoSidedRejectionRegion (p : Measure ℝ)
-  (threshold : ENNReal) := {observed | ¬ two_sided_pval observed p ≥ threshold}
+  (threshold : ENNReal) := {observed | two_sided_pval observed p < threshold}
+
+def power (threshold : ENNReal) (p₀ : Measure ℝ) := -- p₀ is the null hypothesis measure
+  fun (p : Measure ℝ) => p (twoSidedRejectionRegion p₀ threshold)
 
 /-- Type 1 error when testing
 H₀ : θ = hypθ
@@ -98,7 +103,40 @@ lemma two_sided_p_val_eq_two_sided_p_val' (a : ℝ)
     ext x
     constructor
     intro h
-    · sorry
+    · clear this h₀ g₀
+      generalize moment id 1 p = α at *
+      show x ∈ (Set.Ici a ∪ Set.Iic (α - (a - α)))
+      simp
+      by_cases H : a ≤ x
+      · left
+        exact H
+      · right
+        simp at H
+        -- x -- avg(x,a) -- a
+        --               α is closer to a; then α ≥ avg
+        let avg := (x + a) / 2
+        suffices avg ≤ α by
+          unfold avg at this
+          linarith
+        have h₀ : |x - a| = |x - avg| + |avg - a| := by
+          sorry
+        have h₁ : x ≤ avg := by sorry
+        have h₂ : avg ≤ a := by sorry
+        by_cases G : a ≤ α
+        · linarith
+        ·
+          simp at G
+          -- x -- avg(x,a) -- a
+          --               α- a
+          by_contra J
+          revert h
+          simp at J ⊢
+          have : |x - α| = |x - avg| + |avg - α| := by
+            sorry
+          rw [this]
+          have : |x - avg| = |x - a| - |avg - a| := by linarith
+          rw [this]
+          sorry
     · have :  |a - moment id 1 p|
           = a - moment id 1 p := by
             apply (@abs_eq_self ℝ _ _ _ (a - moment id 1 p)).mpr
